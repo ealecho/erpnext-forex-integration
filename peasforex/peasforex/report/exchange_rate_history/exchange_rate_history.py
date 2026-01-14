@@ -9,8 +9,9 @@ def execute(filters=None):
     columns = get_columns(filters)
     data = get_data(filters)
     chart = get_chart(data, filters)
+    report_summary = get_report_summary(data, filters)
     
-    return columns, data, None, chart
+    return columns, data, None, chart, report_summary
 
 
 def get_columns(filters):
@@ -118,39 +119,167 @@ def get_data(filters):
 
 
 def get_chart(data, filters):
+    """Generate chart data for the report"""
     if not data:
         return None
     
-    # Group data for charting
-    # If specific currencies are selected, show trend chart
+    # Group data by currency pair for multi-line chart
+    pairs = {}
+    for row in data:
+        pair_key = f"{row.get('from_currency')} → {row.get('to_currency')}"
+        if pair_key not in pairs:
+            pairs[pair_key] = []
+        pairs[pair_key].append(row)
+    
+    # If specific currencies are selected, show detailed trend chart
     if filters.get("from_currency") and filters.get("to_currency"):
-        # Filter for spot rates only for cleaner chart
-        spot_data = [d for d in data if d.get("rate_type") == "Spot"]
+        pair_key = f"{filters.get('from_currency')} → {filters.get('to_currency')}"
+        pair_data = pairs.get(pair_key, data)
         
+        # Filter for spot rates for cleaner chart, fallback to all if no spot
+        spot_data = [d for d in pair_data if d.get("rate_type") == "Spot"]
         if not spot_data:
-            spot_data = data
+            spot_data = pair_data
         
-        # Reverse to show chronological order
-        spot_data = sorted(spot_data, key=lambda x: x.get("rate_date"))
+        # Sort chronologically and limit to last 60 data points
+        spot_data = sorted(spot_data, key=lambda x: x.get("rate_date"))[-60:]
         
-        labels = [str(d.get("rate_date")) for d in spot_data[-30:]]  # Last 30 data points
-        values = [d.get("exchange_rate") for d in spot_data[-30:]]
+        labels = [str(d.get("rate_date")) for d in spot_data]
+        values = [float(d.get("exchange_rate") or 0) for d in spot_data]
         
         return {
             "data": {
                 "labels": labels,
                 "datasets": [
                     {
-                        "name": f"{filters.get('from_currency')}/{filters.get('to_currency')}",
+                        "name": pair_key,
                         "values": values
                     }
                 ]
             },
             "type": "line",
+            "height": 300,
             "colors": ["#5e64ff"],
             "lineOptions": {
-                "regionFill": 1
+                "regionFill": 1,
+                "hideDots": 0
+            },
+            "axisOptions": {
+                "xIsSeries": True
             }
         }
     
+    # Multi-currency view - show all pairs
+    if len(pairs) <= 8:  # Only show chart if not too many pairs
+        # Get unique dates across all pairs
+        all_dates = set()
+        for pair_data in pairs.values():
+            for row in pair_data:
+                if row.get("rate_type") == "Spot":
+                    all_dates.add(str(row.get("rate_date")))
+        
+        if not all_dates:
+            # Fallback to all rate types
+            for pair_data in pairs.values():
+                for row in pair_data:
+                    all_dates.add(str(row.get("rate_date")))
+        
+        labels = sorted(list(all_dates))[-30:]  # Last 30 dates
+        
+        datasets = []
+        colors = ["#7cd6fd", "#5e64ff", "#743ee2", "#ff5858", "#ffa00a", "#28a745", "#17a2b8", "#6c757d"]
+        
+        for idx, (pair_key, pair_data) in enumerate(pairs.items()):
+            # Build date -> rate mapping for this pair
+            date_rate_map = {}
+            for row in pair_data:
+                if row.get("rate_type") == "Spot":
+                    date_rate_map[str(row.get("rate_date"))] = float(row.get("exchange_rate") or 0)
+            
+            # If no spot rates, use any rate
+            if not date_rate_map:
+                for row in pair_data:
+                    date_rate_map[str(row.get("rate_date"))] = float(row.get("exchange_rate") or 0)
+            
+            values = [date_rate_map.get(date, 0) for date in labels]
+            
+            datasets.append({
+                "name": pair_key,
+                "values": values,
+                "chartType": "line"
+            })
+        
+        if datasets:
+            return {
+                "data": {
+                    "labels": labels,
+                    "datasets": datasets
+                },
+                "type": "line",
+                "height": 300,
+                "colors": colors[:len(datasets)],
+                "lineOptions": {
+                    "regionFill": 0,
+                    "hideDots": 0
+                },
+                "axisOptions": {
+                    "xIsSeries": True
+                }
+            }
+    
     return None
+
+
+def get_report_summary(data, filters):
+    """Generate summary cards for dashboard view"""
+    if not data:
+        return None
+    
+    summary = []
+    
+    # Total records
+    summary.append({
+        "value": len(data),
+        "label": _("Total Records"),
+        "datatype": "Int",
+        "indicator": "blue"
+    })
+    
+    # Unique currency pairs
+    pairs = set()
+    for row in data:
+        pairs.add(f"{row.get('from_currency')}-{row.get('to_currency')}")
+    
+    summary.append({
+        "value": len(pairs),
+        "label": _("Currency Pairs"),
+        "datatype": "Int",
+        "indicator": "green"
+    })
+    
+    # Date range
+    dates = [row.get("rate_date") for row in data if row.get("rate_date")]
+    if dates:
+        min_date = min(dates)
+        max_date = max(dates)
+        days = (max_date - min_date).days + 1 if hasattr(max_date - min_date, 'days') else 1
+        
+        summary.append({
+            "value": days,
+            "label": _("Days Covered"),
+            "datatype": "Int",
+            "indicator": "orange"
+        })
+    
+    # Latest sync
+    synced_times = [row.get("synced_at") for row in data if row.get("synced_at")]
+    if synced_times:
+        latest_sync = max(synced_times)
+        summary.append({
+            "value": frappe.utils.pretty_date(latest_sync),
+            "label": _("Last Synced"),
+            "datatype": "Data",
+            "indicator": "gray"
+        })
+    
+    return summary
