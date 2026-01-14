@@ -94,7 +94,7 @@ def get_default_company():
     return None
 
 
-def update_currency_exchange(from_currency, to_currency, rate, date, for_buying=1, for_selling=1):
+def update_currency_exchange(from_currency, to_currency, rate, date, for_buying=1, for_selling=1, company=None):
     """
     Create or update ERPNext Currency Exchange record.
     
@@ -105,8 +105,9 @@ def update_currency_exchange(from_currency, to_currency, rate, date, for_buying=
         date: Rate date
         for_buying: Apply to buying transactions
         for_selling: Apply to selling transactions
+        company: Target company (optional, uses default if not specified)
     """
-    log_info(f"Updating Currency Exchange: {from_currency} -> {to_currency} @ {rate} on {date}")
+    log_info(f"Updating Currency Exchange: {from_currency} -> {to_currency} @ {rate} on {date} (company: {company or 'default'})")
     
     try:
         # Check if Currency Exchange requires company field
@@ -150,10 +151,11 @@ def update_currency_exchange(from_currency, to_currency, rate, date, for_buying=
             
             # Add company if required
             if has_company_field and company_is_mandatory:
-                company = get_default_company()
-                if company:
-                    doc_data["company"] = company
-                    log_debug(f"Adding company to Currency Exchange: {company}")
+                # Use provided company, or fall back to default
+                target_company = company or get_default_company()
+                if target_company:
+                    doc_data["company"] = target_company
+                    log_debug(f"Adding company to Currency Exchange: {target_company}")
                 else:
                     log_error("Company is mandatory but no company found")
                     frappe.log_error(
@@ -161,6 +163,10 @@ def update_currency_exchange(from_currency, to_currency, rate, date, for_buying=
                         "Peasforex: Company Required"
                     )
                     return
+            elif has_company_field and company:
+                # Field exists but not mandatory - still use if provided
+                doc_data["company"] = company
+                log_debug(f"Adding optional company to Currency Exchange: {company}")
             
             log_debug(f"Creating Currency Exchange with data: {doc_data}")
             doc = frappe.get_doc(doc_data)
@@ -181,21 +187,21 @@ def update_currency_exchange(from_currency, to_currency, rate, date, for_buying=
         raise
 
 
-def create_bidirectional_rate(from_currency, to_currency, rate, date):
+def create_bidirectional_rate(from_currency, to_currency, rate, date, company=None):
     """Create both forward and reverse exchange rates"""
-    log_info(f"Creating bidirectional rate: {from_currency} <-> {to_currency} @ {rate}")
+    log_info(f"Creating bidirectional rate: {from_currency} <-> {to_currency} @ {rate} (company: {company or 'default'})")
     
     settings = get_settings()
     
     # Forward rate
     log_debug(f"Creating forward rate: {from_currency} -> {to_currency}")
-    update_currency_exchange(from_currency, to_currency, rate, date)
+    update_currency_exchange(from_currency, to_currency, rate, date, company=company)
     
     # Reverse rate if bidirectional is enabled
     if settings.create_bidirectional_rates and rate > 0:
         reverse_rate = 1 / rate
         log_debug(f"Creating reverse rate: {to_currency} -> {from_currency} @ {reverse_rate}")
-        update_currency_exchange(to_currency, from_currency, reverse_rate, date)
+        update_currency_exchange(to_currency, from_currency, reverse_rate, date, company=company)
 
 
 def store_rate_log(from_currency, to_currency, rate_date, rate_type, exchange_rate,
@@ -306,9 +312,10 @@ def sync_daily_spot_rates():
         
         from_currency = pair["from_currency"]
         to_currency = pair["to_currency"]
+        target_company = pair.get("target_company")  # Company-specific rate
         pair_str = f"{from_currency}-{to_currency}"
         
-        log_info(f"[{idx+1}/{len(enabled_pairs)}] Processing {pair_str}")
+        log_info(f"[{idx+1}/{len(enabled_pairs)}] Processing {pair_str}" + (f" for {target_company}" if target_company else ""))
         
         try:
             # Fetch current rate
@@ -346,7 +353,7 @@ def sync_daily_spot_rates():
             if settings.auto_update_currency_exchange:
                 log_debug(f"Auto-updating Currency Exchange for {pair_str}")
                 try:
-                    create_bidirectional_rate(from_currency, to_currency, rate, current_date)
+                    create_bidirectional_rate(from_currency, to_currency, rate, current_date, company=target_company)
                 except Exception as e:
                     log_error(f"Failed to create Currency Exchange for {pair_str}: {str(e)}")
                     # Continue with logging even if Currency Exchange fails
@@ -445,9 +452,10 @@ def sync_monthly_rates():
     for idx, pair in enumerate(enabled_pairs):
         from_currency = pair["from_currency"]
         to_currency = pair["to_currency"]
+        target_company = pair.get("target_company")  # Company-specific rate
         pair_str = f"{from_currency}-{to_currency}"
         
-        log_info(f"[{idx+1}/{len(enabled_pairs)}] Processing {pair_str}")
+        log_info(f"[{idx+1}/{len(enabled_pairs)}] Processing {pair_str}" + (f" for {target_company}" if target_company else ""))
         
         try:
             # Get previous month rates
@@ -475,7 +483,7 @@ def sync_monthly_rates():
                 
                 if settings.auto_update_currency_exchange:
                     try:
-                        create_bidirectional_rate(from_currency, to_currency, closing_rate, month_end_date)
+                        create_bidirectional_rate(from_currency, to_currency, closing_rate, month_end_date, company=target_company)
                     except Exception as e:
                         log_error(f"Failed to create closing rate: {str(e)}")
                 
@@ -633,9 +641,10 @@ def backfill_historical_rates(months=2):
     for idx, pair in enumerate(enabled_pairs):
         from_currency = pair["from_currency"]
         to_currency = pair["to_currency"]
+        target_company = pair.get("target_company")  # Company-specific rate
         pair_str = f"{from_currency}-{to_currency}"
         
-        log_info(f"[{idx+1}/{len(enabled_pairs)}] Processing {pair_str}")
+        log_info(f"[{idx+1}/{len(enabled_pairs)}] Processing {pair_str}" + (f" for {target_company}" if target_company else ""))
         
         try:
             # Get daily data (full to ensure we have enough history)
@@ -690,7 +699,7 @@ def backfill_historical_rates(months=2):
                     # Update Currency Exchange
                     if settings.auto_update_currency_exchange:
                         try:
-                            create_bidirectional_rate(from_currency, to_currency, close_rate, date_str)
+                            create_bidirectional_rate(from_currency, to_currency, close_rate, date_str, company=target_company)
                         except Exception as e:
                             log_error(f"Failed to create rate for {date_str}: {str(e)}")
                     

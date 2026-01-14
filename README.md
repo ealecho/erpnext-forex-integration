@@ -19,18 +19,28 @@ A Frappe/ERPNext app that integrates with Alpha Vantage to automatically sync fo
 
 The app comes with these default currency pairs configured:
 
-| From | To  | Sync Types |
-|------|-----|------------|
-| GBP  | UGX | Spot, Closing, Average, Prudency |
-| GBP  | ZMW | Spot, Closing, Average, Prudency |
-| GBP  | GHS | Spot, Closing, Average, Prudency |
-| GBP  | USD | Spot, Closing, Average, Prudency |
-| USD  | UGX | Spot, Closing, Average, Prudency |
-| USD  | ZMW | Spot, Closing, Average, Prudency |
-| DKK  | GBP | Spot, Closing, Average, Prudency |
-| EUR  | GBP | Spot, Closing, Average, Prudency |
+| From | To  | Suggested Company | Sync Types |
+|------|-----|-------------------|------------|
+| GBP  | UGX | PEAS Uganda       | Spot, Closing, Average, Prudency |
+| GBP  | ZMW | PEAS Zambia       | Spot, Closing, Average, Prudency |
+| GBP  | GHS | PEAS Ghana        | Spot, Closing, Average, Prudency |
+| GBP  | USD | PEAS Global       | Spot, Closing, Average, Prudency |
+| USD  | UGX | PEAS Uganda       | Spot, Closing, Average, Prudency |
+| USD  | ZMW | PEAS Zambia       | Spot, Closing, Average, Prudency |
+| DKK  | GBP | PEAS Global       | Spot, Closing, Average, Prudency |
+| EUR  | GBP | PEAS Global       | Spot, Closing, Average, Prudency |
 
-You can add or remove currency pairs in the Forex Settings.
+You can add or remove currency pairs and assign each to a specific company in the Forex Settings.
+
+### Company-Specific Currency Pairs
+
+Each currency pair can be assigned to a specific company using the **Target Company** field. This is useful when:
+
+- Different subsidiaries operate in different currencies
+- You want to associate GBP-UGX rates with your Uganda company
+- You want to associate GBP-ZMW rates with your Zambia company
+
+If no target company is specified, the rate will use the default company from Global Defaults.
 
 ## Installation
 
@@ -114,7 +124,10 @@ bench restart
 Main configuration for the integration.
 
 ### Currency Pair (Child Table)
-Defines currency pairs to sync with individual sync type toggles.
+Defines currency pairs to sync with:
+- From/To currency selection
+- **Target Company**: Assign rates to a specific company
+- Individual sync type toggles (Spot, Closing, Average, Prudency)
 
 ### Applicable Company (Child Table)
 Lists companies to apply exchange rates to.

@@ -184,7 +184,8 @@ class ForexSettings(Document):
                 "sync_spot_daily": row.sync_spot_daily,
                 "sync_closing_monthly": row.sync_closing_monthly,
                 "sync_average_monthly": row.sync_average_monthly,
-                "sync_prudency_monthly": row.sync_prudency_monthly
+                "sync_prudency_monthly": row.sync_prudency_monthly,
+                "target_company": getattr(row, "target_company", None)  # Company-specific rate
             }
             for row in self.currency_pairs
             if row.enabled

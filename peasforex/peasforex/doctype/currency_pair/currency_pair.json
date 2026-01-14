@@ -8,6 +8,7 @@
   "from_currency",
   "to_currency",
   "enabled",
+  "target_company",
   "column_break_1",
   "sync_spot_daily",
   "sync_closing_monthly",
@@ -37,6 +38,14 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Enabled"
+  },
+  {
+   "description": "Assign this currency pair to a specific company. Leave blank to use default company or apply to all (based on settings).",
+   "fieldname": "target_company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Target Company",
+   "options": "Company"
   },
   {
    "fieldname": "column_break_1",
