@@ -1,4 +1,4 @@
-# Copyright (c) 2024, ERP Champions and contributors
+# Copyright (c) 2026, ERP Champions and contributors
 # For license information, please see license.txt
 
 import frappe
@@ -107,7 +107,7 @@ class TestForexRateLog(FrappeTestCase):
             "doctype": "Forex Rate Log",
             "from_currency": "USD",
             "to_currency": "UGX",
-            "rate_date": "2024-01-14",
+            "rate_date": "2026-01-14",
             "rate_type": "Spot",
             "exchange_rate": 3750.50
         })
@@ -135,7 +135,7 @@ class TestForexRateLog(FrappeTestCase):
         doc = ForexRateLog.log_rate(
             from_currency="GBP",
             to_currency="EUR",
-            rate_date="2024-01-14",
+            rate_date="2026-01-14",
             rate_type="Spot",
             exchange_rate=1.1650
         )

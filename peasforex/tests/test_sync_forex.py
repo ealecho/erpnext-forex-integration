@@ -1,4 +1,4 @@
-# Copyright (c) 2024, ERP Champions and contributors
+# Copyright (c) 2026, ERP Champions and contributors
 # For license information, please see license.txt
 
 import unittest
@@ -17,15 +17,15 @@ class TestSyncForex(unittest.TestCase):
             "to_currency": "UGX",
             "bid_price": 3750.00,
             "ask_price": 3751.00,
-            "last_refreshed": "2024-01-14 12:00:00",
+            "last_refreshed": "2026-01-14 12:00:00",
             "raw": {}
         }
         
         self.sample_daily_data = {
             "time_series": {
-                "2024-01-14": {"open": 3740.0, "high": 3760.0, "low": 3735.0, "close": 3750.5},
-                "2024-01-13": {"open": 3730.0, "high": 3755.0, "low": 3725.0, "close": 3740.0},
-                "2024-01-12": {"open": 3720.0, "high": 3745.0, "low": 3715.0, "close": 3730.0},
+                "2026-01-14": {"open": 3740.0, "high": 3760.0, "low": 3735.0, "close": 3750.5},
+                "2026-01-13": {"open": 3730.0, "high": 3755.0, "low": 3725.0, "close": 3740.0},
+                "2026-01-12": {"open": 3720.0, "high": 3745.0, "low": 3715.0, "close": 3730.0},
             },
             "meta_data": {},
             "raw": {}
@@ -109,7 +109,7 @@ class TestSyncForex(unittest.TestCase):
         mock_doc = MagicMock()
         mock_frappe.get_doc.return_value = mock_doc
         
-        update_currency_exchange("USD", "UGX", 3750.50, "2024-01-14")
+        update_currency_exchange("USD", "UGX", 3750.50, "2026-01-14")
         
         mock_frappe.get_doc.assert_called_once()
         mock_doc.insert.assert_called_once_with(ignore_permissions=True)
@@ -123,7 +123,7 @@ class TestSyncForex(unittest.TestCase):
         # Mock existing record
         mock_frappe.db.get_value.return_value = "CE-00001"
         
-        update_currency_exchange("USD", "UGX", 3750.50, "2024-01-14")
+        update_currency_exchange("USD", "UGX", 3750.50, "2026-01-14")
         
         # Should update, not create
         mock_frappe.db.set_value.assert_called()
@@ -139,7 +139,7 @@ class TestSyncForex(unittest.TestCase):
         mock_settings.create_bidirectional_rates = True
         mock_frappe.get_single.return_value = mock_settings
         
-        create_bidirectional_rate("USD", "UGX", 3750.50, "2024-01-14")
+        create_bidirectional_rate("USD", "UGX", 3750.50, "2026-01-14")
         
         # Should be called twice - forward and reverse
         self.assertEqual(mock_update.call_count, 2)
@@ -180,8 +180,8 @@ class TestSyncForex(unittest.TestCase):
             }
         ]
         mock_frappe.get_single.return_value = mock_settings
-        mock_frappe.utils.today.return_value = "2024-01-14"
-        mock_frappe.utils.now.return_value = "2024-01-14 12:00:00"
+        mock_frappe.utils.today.return_value = "2026-01-14"
+        mock_frappe.utils.now.return_value = "2026-01-14 12:00:00"
         
         # Mock API client
         mock_client = MagicMock()
@@ -260,7 +260,7 @@ class TestMonthlyRateCalculations(unittest.TestCase):
         self.monthly_data = {}
         base_rate = 3700.0
         for i in range(20):
-            date = f"2024-12-{(i+1):02d}"
+            date = f"2026-12-{(i+1):02d}"
             variation = (i % 5) * 10  # Creates some variation
             self.monthly_data[date] = {
                 "open": base_rate + variation,
@@ -276,7 +276,7 @@ class TestMonthlyRateCalculations(unittest.TestCase):
         last_date = sorted_dates[0]
         closing_rate = self.monthly_data[last_date]["close"]
         
-        self.assertEqual(last_date, "2024-12-20")
+        self.assertEqual(last_date, "2026-12-20")
         self.assertIsNotNone(closing_rate)
     
     def test_average_rate_calculation(self):
@@ -315,7 +315,7 @@ class TestLogFunctions(unittest.TestCase):
         
         mock_doc = MagicMock()
         mock_frappe.get_doc.return_value = mock_doc
-        mock_frappe.utils.now.return_value = "2024-01-14 12:00:00"
+        mock_frappe.utils.now.return_value = "2026-01-14 12:00:00"
         
         log_sync(
             sync_type="Spot (Daily)",
@@ -338,7 +338,7 @@ class TestLogFunctions(unittest.TestCase):
         
         mock_doc = MagicMock()
         mock_frappe.get_doc.return_value = mock_doc
-        mock_frappe.utils.now.return_value = "2024-01-14 12:00:00"
+        mock_frappe.utils.now.return_value = "2026-01-14 12:00:00"
         
         log_sync(
             sync_type="Spot (Daily)",

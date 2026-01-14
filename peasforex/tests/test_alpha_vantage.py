@@ -1,4 +1,4 @@
-# Copyright (c) 2024, ERP Champions and contributors
+# Copyright (c) 2026, ERP Champions and contributors
 # For license information, please see license.txt
 
 import unittest
@@ -21,7 +21,7 @@ class TestAlphaVantageClient(unittest.TestCase):
                 "3. To_Currency Code": "EUR",
                 "4. To_Currency Name": "Euro",
                 "5. Exchange Rate": "0.92150000",
-                "6. Last Refreshed": "2024-01-14 12:00:00",
+                "6. Last Refreshed": "2026-01-14 12:00:00",
                 "7. Time Zone": "UTC",
                 "8. Bid Price": "0.92140000",
                 "9. Ask Price": "0.92160000"
@@ -34,22 +34,22 @@ class TestAlphaVantageClient(unittest.TestCase):
                 "2. From Symbol": "USD",
                 "3. To Symbol": "EUR",
                 "4. Output Size": "Compact",
-                "5. Last Refreshed": "2024-01-14"
+                "5. Last Refreshed": "2026-01-14"
             },
             "Time Series FX (Daily)": {
-                "2024-01-14": {
+                "2026-01-14": {
                     "1. open": "0.9200",
                     "2. high": "0.9250",
                     "3. low": "0.9180",
                     "4. close": "0.9215"
                 },
-                "2024-01-13": {
+                "2026-01-13": {
                     "1. open": "0.9180",
                     "2. high": "0.9220",
                     "3. low": "0.9170",
                     "4. close": "0.9200"
                 },
-                "2024-01-12": {
+                "2026-01-12": {
                     "1. open": "0.9150",
                     "2. high": "0.9200",
                     "3. low": "0.9140",
@@ -186,8 +186,8 @@ class TestAlphaVantageClient(unittest.TestCase):
         self.assertEqual(len(result["time_series"]), 3)
         
         # Check data parsing
-        self.assertEqual(result["time_series"]["2024-01-14"]["close"], 0.9215)
-        self.assertEqual(result["time_series"]["2024-01-14"]["high"], 0.9250)
+        self.assertEqual(result["time_series"]["2026-01-14"]["close"], 0.9215)
+        self.assertEqual(result["time_series"]["2026-01-14"]["high"], 0.9250)
     
     @patch('peasforex.api.alpha_vantage.frappe')
     @patch('requests.Session.get')
