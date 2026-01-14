@@ -174,16 +174,20 @@ def ensure_currencies_exist():
 def create_dashboard_charts():
     """
     Create Dashboard Charts for the Forex Integration dashboard.
+    Uses custom chart sources for actual exchange rate values.
     """
     log_info("Creating Dashboard Charts")
     
+    # First, ensure Dashboard Chart Sources exist
+    create_chart_sources()
+    
     charts = [
+        # Custom chart showing actual exchange rate trends over time
         {
             "doctype": "Dashboard Chart",
-            "chart_name": "Forex Rates Over Time",
-            "chart_type": "Count",
-            "document_type": "Forex Rate Log",
-            "based_on": "rate_date",
+            "chart_name": "Forex Rate Trends",
+            "chart_type": "Custom",
+            "source": "Forex Rate Trends",
             "timeseries": 1,
             "timespan": "Last Month",
             "time_interval": "Daily",
@@ -194,14 +198,12 @@ def create_dashboard_charts():
             "is_standard": 1,
             "module": "Peasforex"
         },
+        # Custom chart showing latest rates for each currency pair
         {
             "doctype": "Dashboard Chart",
-            "chart_name": "Rates by Currency Pair",
-            "chart_type": "Group By",
-            "document_type": "Forex Rate Log",
-            "group_by_type": "Count",
-            "group_by_based_on": "from_currency",
-            "number_of_groups": 10,
+            "chart_name": "Latest Exchange Rates",
+            "chart_type": "Custom",
+            "source": "Forex Latest Rates",
             "type": "Bar",
             "color": "#29CD42",
             "filters_json": "{}",
@@ -209,6 +211,7 @@ def create_dashboard_charts():
             "is_standard": 1,
             "module": "Peasforex"
         },
+        # Keep some count-based charts for operational metrics
         {
             "doctype": "Dashboard Chart",
             "chart_name": "Sync Status Distribution",
@@ -269,6 +272,43 @@ def create_dashboard_charts():
             log_error(f"Failed to create Dashboard Chart {chart_name}: {str(e)}")
     
     log_info(f"Dashboard Charts creation completed")
+
+
+def create_chart_sources():
+    """
+    Create Dashboard Chart Source records for custom charts.
+    """
+    log_info("Creating Dashboard Chart Sources")
+    
+    sources = [
+        {
+            "doctype": "Dashboard Chart Source",
+            "name": "Forex Rate Trends",
+            "source_name": "Forex Rate Trends",
+            "module": "Peasforex",
+            "timeseries": 1
+        },
+        {
+            "doctype": "Dashboard Chart Source",
+            "name": "Forex Latest Rates",
+            "source_name": "Forex Latest Rates",
+            "module": "Peasforex",
+            "timeseries": 0
+        }
+    ]
+    
+    for source in sources:
+        source_name = source["name"]
+        try:
+            if not frappe.db.exists("Dashboard Chart Source", source_name):
+                log_debug(f"Creating Dashboard Chart Source: {source_name}")
+                doc = frappe.get_doc(source)
+                doc.insert(ignore_permissions=True)
+                log_info(f"Created Dashboard Chart Source: {source_name}")
+            else:
+                log_debug(f"Dashboard Chart Source already exists: {source_name}")
+        except Exception as e:
+            log_error(f"Failed to create Dashboard Chart Source {source_name}: {str(e)}")
 
 
 def create_number_cards():
