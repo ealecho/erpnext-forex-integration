@@ -3,10 +3,11 @@
  "docstatus": 0,
  "doctype": "Dashboard Chart Source",
  "module": "Peasforex",
- "modified": "2026-01-14 10:00:00.000000",
+ "modified": "2026-01-15 10:00:00.000000",
  "modified_by": "Administrator",
  "name": "Forex Rate Trends",
  "owner": "Administrator",
  "source_name": "Forex Rate Trends",
- "timeseries": 1
+ "timeseries": 1,
+ "filters_json": "[{\"fieldname\": \"currency_group\", \"label\": \"Currency Group\", \"fieldtype\": \"Select\", \"options\": \"African\\nMajor\", \"default\": \"African\"}]"
 }

@@ -3,6 +3,12 @@
 
 import frappe
 from frappe.utils import getdate, add_days, nowdate
+import json
+
+
+# Currency group definitions
+AFRICAN_CURRENCIES = ['UGX', 'ZMW', 'GHS']
+MAJOR_CURRENCIES = ['USD', 'EUR', 'GBP', 'DKK']
 
 
 @frappe.whitelist()
@@ -12,7 +18,20 @@ def get_data(chart_name=None, chart=None, no_cache=None, filters=None,
     """
     Custom data source for Forex Rate Trends chart.
     Shows actual exchange rate values over time for each currency pair.
+    Supports filtering by currency group (African or Major).
     """
+    
+    # Parse filters if string
+    if isinstance(filters, str):
+        try:
+            filters = json.loads(filters)
+        except (json.JSONDecodeError, TypeError):
+            filters = {}
+    
+    filters = filters or {}
+    
+    # Get currency group filter (default to African for better Y-axis scaling)
+    currency_group = filters.get('currency_group', 'African')
     
     # Determine date range based on timespan
     if timespan == "Last Week":
@@ -35,8 +54,11 @@ def get_data(chart_name=None, chart=None, no_cache=None, filters=None,
     if to_date:
         end_date = to_date
     
-    # Get spot rates for all currency pairs, grouped by date and pair
-    data = frappe.db.sql("""
+    # Build WHERE clause based on currency group
+    where_clause = build_currency_filter(currency_group)
+    
+    # Get spot rates for filtered currency pairs, grouped by date and pair
+    query = """
         SELECT 
             rate_date,
             CONCAT(from_currency, ' → ', to_currency) as currency_pair,
@@ -45,8 +67,11 @@ def get_data(chart_name=None, chart=None, no_cache=None, filters=None,
         WHERE rate_type = 'Spot'
         AND rate_date >= %(start_date)s
         AND rate_date <= %(end_date)s
+        {where_clause}
         ORDER BY rate_date ASC
-    """, {
+    """.format(where_clause=where_clause)
+    
+    data = frappe.db.sql(query, {
         "start_date": start_date,
         "end_date": end_date
     }, as_dict=1)
@@ -88,6 +113,26 @@ def get_data(chart_name=None, chart=None, no_cache=None, filters=None,
         "labels": labels,
         "datasets": datasets
     }
+
+
+def build_currency_filter(currency_group):
+    """
+    Build SQL WHERE clause based on currency group selection.
+    
+    African: Pairs where to_currency is UGX, ZMW, or GHS
+    Major: Pairs where both from and to are major currencies (USD, EUR, GBP, DKK)
+    """
+    if currency_group == 'African':
+        # African currencies as the target (to_currency)
+        currencies = "', '".join(AFRICAN_CURRENCIES)
+        return f"AND to_currency IN ('{currencies}')"
+    elif currency_group == 'Major':
+        # Both currencies should be major currencies
+        currencies = "', '".join(MAJOR_CURRENCIES)
+        return f"AND from_currency IN ('{currencies}') AND to_currency IN ('{currencies}')"
+    else:
+        # Default: return all (no additional filter)
+        return ""
 
 
 def format_short_date(date_obj):
