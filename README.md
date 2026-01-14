@@ -12,8 +12,28 @@ A Frappe/ERPNext app that integrates with Alpha Vantage to automatically sync fo
 - **Bidirectional Rates**: Automatically creates both forward and reverse exchange rates
 - **Company-Specific Application**: Apply rates to all companies or select specific ones
 - **Historical Data Storage**: Stores all rates in a log for reporting and analysis
-- **Exchange Rate History Report**: Visual report with charts for trend analysis
+- **Native Dashboard**: Visual dashboard with charts and KPI cards (no Frappe Insights required)
+- **Exchange Rate History Report**: Detailed report with charts for trend analysis
 - **Manual Sync & Backfill**: Manually trigger syncs or backfill historical data
+
+## Dashboard
+
+The app includes a native Frappe dashboard with:
+
+### Number Cards (KPIs)
+- **Total Forex Rates**: Total number of rates in the system
+- **Successful Syncs**: Count of successful sync operations
+- **Failed Syncs**: Count of failed sync operations
+- **Rates This Week**: Rates synced in the current week
+
+### Charts
+- **Forex Rates Over Time**: Line chart showing rate sync activity
+- **Rates by Currency Pair**: Bar chart of rates grouped by source currency
+- **Sync Status Distribution**: Donut chart of success/error status
+- **Daily Sync Activity**: Bar chart of daily sync operations
+- **Rates by Type**: Pie chart showing distribution of rate types
+
+Access the dashboard via the **Forex Integration** workspace.
 
 ## Pre-configured Currency Pairs
 
@@ -46,24 +66,66 @@ If no target company is specified, the rate will use the default company from Gl
 
 ### Prerequisites
 
-- ERPNext v13 or v14
-- Alpha Vantage Premium API key (get one at https://www.alphavantage.co/support/#api-key)
+- ERPNext v13, v14, or v15
+- Alpha Vantage API key (get one at https://www.alphavantage.co/support/#api-key)
+  - Free tier: 25 requests/day (sufficient for testing)
+  - Premium: Recommended for production use
 
-### Install via Bench
+### Step-by-Step Installation
+
+#### 1. Get the App
 
 ```bash
-# Get the app
-bench get-app https://github.com/your-org/peasforex.git
+cd ~/frappe-bench
 
-# Install on your site
+# Clone from GitHub
+bench get-app https://github.com/ealecho/erpnext-forex-integration.git
+```
+
+#### 2. Install on Your Site
+
+```bash
+# Install the app on your site
 bench --site your-site.local install-app peasforex
+```
 
-# Run migrations
+#### 3. Run Migrations
+
+```bash
 bench --site your-site.local migrate
+```
 
-# Restart bench
+#### 4. Build Assets (if needed)
+
+```bash
+bench build --app peasforex
+```
+
+#### 5. Restart Services
+
+```bash
 bench restart
 ```
+
+#### 6. Enable Scheduler (Required for Automatic Syncs)
+
+```bash
+bench --site your-site.local enable-scheduler
+```
+
+### Post-Installation Setup
+
+After installation, the app creates:
+- Default Forex Settings with 8 pre-configured currency pairs
+- Required currencies (GBP, USD, EUR, UGX, ZMW, GHS, DKK)
+- Dashboard charts and number cards
+- Forex Integration workspace
+
+### Verify Installation
+
+1. Search for "Forex Integration" in the Awesome Bar
+2. You should see the workspace with dashboard charts
+3. Navigate to Forex Settings to configure your API key
 
 ## Configuration
 
