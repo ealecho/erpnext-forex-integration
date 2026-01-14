@@ -1,0 +1,84 @@
+{
+ "actions": [],
+ "creation": "2024-01-14 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "from_currency",
+  "to_currency",
+  "enabled",
+  "column_break_1",
+  "sync_spot_daily",
+  "sync_closing_monthly",
+  "sync_average_monthly",
+  "sync_prudency_monthly"
+ ],
+ "fields": [
+  {
+   "fieldname": "from_currency",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "From Currency",
+   "options": "Currency",
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_currency",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "To Currency",
+   "options": "Currency",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "sync_spot_daily",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Sync Spot (Daily)"
+  },
+  {
+   "default": "1",
+   "fieldname": "sync_closing_monthly",
+   "fieldtype": "Check",
+   "label": "Sync Closing (1st of Month)"
+  },
+  {
+   "default": "1",
+   "fieldname": "sync_average_monthly",
+   "fieldtype": "Check",
+   "label": "Sync Monthly Average"
+  },
+  {
+   "default": "1",
+   "fieldname": "sync_prudency_monthly",
+   "fieldtype": "Check",
+   "label": "Sync Prudency Rate"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-14 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Peasforex",
+ "name": "Currency Pair",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

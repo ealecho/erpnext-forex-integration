@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include peasforex *.css
+recursive-include peasforex *.csv
+recursive-include peasforex *.html
+recursive-include peasforex *.ico
+recursive-include peasforex *.js
+recursive-include peasforex *.json
+recursive-include peasforex *.md
+recursive-include peasforex *.png
+recursive-include peasforex *.py
+recursive-include peasforex *.svg
+recursive-include peasforex *.txt
+recursive-exclude peasforex *.pyc

@@ -1,0 +1,111 @@
+{
+ "actions": [],
+ "autoname": "format:SYNC-{sync_time}-{####}",
+ "creation": "2024-01-14 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sync_time",
+  "sync_type",
+  "currency_pair",
+  "column_break_1",
+  "status",
+  "exchange_rate",
+  "section_break_details",
+  "error_message",
+  "api_response"
+ ],
+ "fields": [
+  {
+   "fieldname": "sync_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sync Time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sync_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Sync Type",
+   "options": "Spot (Daily)\nClosing (Monthly)\nMonthly Average\nPrudency\nBackfill\nManual"
+  },
+  {
+   "fieldname": "currency_pair",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Currency Pair"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Success\nError\nSkipped"
+  },
+  {
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Exchange Rate",
+   "precision": "9"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_details",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Text",
+   "label": "Error Message"
+  },
+  {
+   "fieldname": "api_response",
+   "fieldtype": "Code",
+   "label": "API Response",
+   "options": "JSON"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-01-14 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Peasforex",
+ "name": "Forex Sync Log",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1
+  }
+ ],
+ "sort_field": "sync_time",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

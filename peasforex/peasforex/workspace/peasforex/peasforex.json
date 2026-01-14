@@ -1,0 +1,149 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"jHZ8kFnfqT\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Forex Integration</b></span>\",\"col\":12}},{\"id\":\"shortcut-section\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Forex Settings\",\"col\":4}},{\"id\":\"shortcut-section2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Forex Rate Log\",\"col\":4}},{\"id\":\"shortcut-section3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Forex Sync Log\",\"col\":4}},{\"id\":\"uRfgHAhCLB\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"links-section\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"report-link\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Exchange Rate History\",\"col\":4}},{\"id\":\"currency-exchange-link\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Currency Exchange\",\"col\":4}}]",
+ "creation": "2024-01-14 10:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "exchange",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "Forex Integration",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Settings",
+   "link_count": 0,
+   "link_to": "",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Forex Settings",
+   "link_count": 0,
+   "link_to": "Forex Settings",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Currency Exchange",
+   "link_count": 0,
+   "link_to": "Currency Exchange",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Data & Logs",
+   "link_count": 0,
+   "link_to": "",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Forex Rate Log",
+   "link_count": 0,
+   "link_to": "Forex Rate Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Forex Sync Log",
+   "link_count": 0,
+   "link_to": "Forex Sync Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 0,
+   "link_to": "",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Exchange Rate History",
+   "link_count": 0,
+   "link_to": "Exchange Rate History",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2024-01-14 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Peasforex",
+ "name": "Forex Integration",
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 1,
+ "shortcuts": [
+  {
+   "color": "Green",
+   "doc_view": "",
+   "format": "{} Active Pairs",
+   "label": "Forex Settings",
+   "link_to": "Forex Settings",
+   "stats_filter": "",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "{} Rates",
+   "label": "Forex Rate Log",
+   "link_to": "Forex Rate Log",
+   "stats_filter": "",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": "{} Syncs",
+   "label": "Forex Sync Log",
+   "link_to": "Forex Sync Log",
+   "stats_filter": "",
+   "type": "DocType"
+  },
+  {
+   "color": "Yellow",
+   "doc_view": "",
+   "label": "Exchange Rate History",
+   "link_to": "Exchange Rate History",
+   "type": "Report"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "Currency Exchange",
+   "link_to": "Currency Exchange",
+   "type": "DocType"
+  }
+ ],
+ "title": "Forex Integration"
+}

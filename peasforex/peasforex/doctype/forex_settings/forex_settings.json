@@ -1,0 +1,172 @@
+{
+ "actions": [],
+ "creation": "2024-01-14 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "api_key",
+  "column_break_1",
+  "last_daily_sync",
+  "last_monthly_sync",
+  "section_break_settings",
+  "create_bidirectional_rates",
+  "auto_update_currency_exchange",
+  "store_historical_data",
+  "column_break_2",
+  "apply_to_all_companies",
+  "applicable_companies",
+  "section_break_currency_pairs",
+  "currency_pairs",
+  "section_break_rate_types",
+  "rate_type_info",
+  "section_break_sync_status",
+  "sync_status_html"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "description": "Enable or disable the forex integration",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "description": "Your Alpha Vantage API key. Get one at https://www.alphavantage.co/support/#api-key",
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API Key",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_daily_sync",
+   "fieldtype": "Datetime",
+   "label": "Last Daily Sync",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_monthly_sync",
+   "fieldtype": "Datetime",
+   "label": "Last Monthly Sync",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_settings",
+   "fieldtype": "Section Break",
+   "label": "Sync Settings"
+  },
+  {
+   "default": "1",
+   "description": "Create both FROM->TO and TO->FROM currency exchange rates",
+   "fieldname": "create_bidirectional_rates",
+   "fieldtype": "Check",
+   "label": "Create Bidirectional Rates"
+  },
+  {
+   "default": "1",
+   "description": "Automatically update ERPNext's Currency Exchange doctype",
+   "fieldname": "auto_update_currency_exchange",
+   "fieldtype": "Check",
+   "label": "Auto Update Currency Exchange"
+  },
+  {
+   "default": "1",
+   "description": "Store historical rates in Forex Rate Log for reporting",
+   "fieldname": "store_historical_data",
+   "fieldtype": "Check",
+   "label": "Store Historical Data"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "Apply exchange rates to all companies",
+   "fieldname": "apply_to_all_companies",
+   "fieldtype": "Check",
+   "label": "Apply to All Companies"
+  },
+  {
+   "depends_on": "eval:!doc.apply_to_all_companies",
+   "description": "Select specific companies to apply exchange rates",
+   "fieldname": "applicable_companies",
+   "fieldtype": "Table",
+   "label": "Applicable Companies",
+   "options": "Applicable Company"
+  },
+  {
+   "fieldname": "section_break_currency_pairs",
+   "fieldtype": "Section Break",
+   "label": "Currency Pairs"
+  },
+  {
+   "description": "Define currency pairs to sync. Add or remove pairs as needed.",
+   "fieldname": "currency_pairs",
+   "fieldtype": "Table",
+   "label": "Currency Pairs",
+   "options": "Currency Pair",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_rate_types",
+   "fieldtype": "Section Break",
+   "label": "Rate Type Information"
+  },
+  {
+   "fieldname": "rate_type_info",
+   "fieldtype": "HTML",
+   "label": "Rate Type Info",
+   "options": "<div class=\"alert alert-info\">\n<h5>Rate Types Explained</h5>\n<ul>\n<li><strong>Spot Rate (Daily):</strong> Current market exchange rate, synced daily</li>\n<li><strong>Closing Rate:</strong> Last trading day rate of the previous month, synced on 1st of each month</li>\n<li><strong>Monthly Average:</strong> Average rate for the previous month, calculated from daily rates</li>\n<li><strong>Prudency Rate:</strong> Most conservative rate (highest for expenses, lowest for income) from the previous month</li>\n</ul>\n</div>"
+  },
+  {
+   "fieldname": "section_break_sync_status",
+   "fieldtype": "Section Break",
+   "label": "Sync Status"
+  },
+  {
+   "fieldname": "sync_status_html",
+   "fieldtype": "HTML",
+   "label": "Sync Status"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-01-14 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Peasforex",
+ "name": "Forex Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
