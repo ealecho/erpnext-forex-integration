@@ -1,6 +1,15 @@
 {
- "charts": [],
- "content": "[{\"id\":\"jHZ8kFnfqT\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Forex Integration</b></span>\",\"col\":12}},{\"id\":\"shortcut-section\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Forex Settings\",\"col\":4}},{\"id\":\"shortcut-section2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Forex Rate Log\",\"col\":4}},{\"id\":\"shortcut-section3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Forex Sync Log\",\"col\":4}},{\"id\":\"uRfgHAhCLB\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"links-section\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"report-link\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Exchange Rate History\",\"col\":4}},{\"id\":\"currency-exchange-link\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Currency Exchange\",\"col\":4}}]",
+ "charts": [
+  {
+   "chart_name": "Forex Rates Over Time",
+   "label": "Rates Over Time"
+  },
+  {
+   "chart_name": "Daily Sync Activity",
+   "label": "Sync Activity"
+  }
+ ],
+ "content": "[{\"id\":\"dashboard-header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Forex Dashboard</b></span>\",\"col\":12}},{\"id\":\"number-cards-section\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Forex Rates\",\"col\":3}},{\"id\":\"number-cards-section2\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Successful Syncs\",\"col\":3}},{\"id\":\"number-cards-section3\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Failed Syncs\",\"col\":3}},{\"id\":\"number-cards-section4\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Rates This Week\",\"col\":3}},{\"id\":\"chart-spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"chart-section1\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Forex Rates Over Time\",\"col\":12}},{\"id\":\"chart-section2\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Rates by Currency Pair\",\"col\":6}},{\"id\":\"chart-section3\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Sync Status Distribution\",\"col\":6}},{\"id\":\"chart-section4\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Daily Sync Activity\",\"col\":6}},{\"id\":\"chart-section5\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Rates by Type\",\"col\":6}},{\"id\":\"links-spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"jHZ8kFnfqT\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Quick Actions</b></span>\",\"col\":12}},{\"id\":\"shortcut-section\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Forex Settings\",\"col\":4}},{\"id\":\"shortcut-section2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Forex Rate Log\",\"col\":4}},{\"id\":\"shortcut-section3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Forex Sync Log\",\"col\":4}},{\"id\":\"uRfgHAhCLB\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"links-section\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"report-link\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Exchange Rate History\",\"col\":4}},{\"id\":\"currency-exchange-link\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Currency Exchange\",\"col\":4}}]",
  "creation": "2024-01-14 10:00:00.000000",
  "docstatus": 0,
  "doctype": "Workspace",
@@ -92,10 +101,28 @@
    "type": "Link"
   }
  ],
- "modified": "2024-01-14 10:00:00.000000",
+ "modified": "2024-01-14 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Peasforex",
  "name": "Forex Integration",
+ "number_cards": [
+  {
+   "label": "Total Rates",
+   "number_card_name": "Total Forex Rates"
+  },
+  {
+   "label": "Successful",
+   "number_card_name": "Successful Syncs"
+  },
+  {
+   "label": "Failed",
+   "number_card_name": "Failed Syncs"
+  },
+  {
+   "label": "This Week",
+   "number_card_name": "Rates This Week"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,

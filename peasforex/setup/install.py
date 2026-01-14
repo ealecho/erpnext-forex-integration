@@ -35,7 +35,7 @@ def log_error(message, data=None):
 def after_install():
     """
     Post-installation setup for Peasforex.
-    Creates default currency pairs and initializes settings.
+    Creates default currency pairs, initializes settings, and sets up dashboard.
     """
     log_info("=" * 50)
     log_info("Starting Peasforex after_install")
@@ -43,6 +43,8 @@ def after_install():
     
     try:
         create_default_settings()
+        create_dashboard_charts()
+        create_number_cards()
         frappe.db.commit()
         log_info("Installation completed successfully")
         
@@ -167,3 +169,202 @@ def ensure_currencies_exist():
             log_debug(f"Currency {currency_name} already exists")
     
     log_info("Currency check completed")
+
+
+def create_dashboard_charts():
+    """
+    Create Dashboard Charts for the Forex Integration dashboard.
+    """
+    log_info("Creating Dashboard Charts")
+    
+    charts = [
+        {
+            "doctype": "Dashboard Chart",
+            "chart_name": "Forex Rates Over Time",
+            "chart_type": "Count",
+            "document_type": "Forex Rate Log",
+            "based_on": "rate_date",
+            "timeseries": 1,
+            "timespan": "Last Month",
+            "time_interval": "Daily",
+            "type": "Line",
+            "color": "#2490EF",
+            "filters_json": "{}",
+            "is_public": 1,
+            "is_standard": 1,
+            "module": "Peasforex"
+        },
+        {
+            "doctype": "Dashboard Chart",
+            "chart_name": "Rates by Currency Pair",
+            "chart_type": "Group By",
+            "document_type": "Forex Rate Log",
+            "group_by_type": "Count",
+            "group_by_based_on": "from_currency",
+            "number_of_groups": 10,
+            "type": "Bar",
+            "color": "#29CD42",
+            "filters_json": "{}",
+            "is_public": 1,
+            "is_standard": 1,
+            "module": "Peasforex"
+        },
+        {
+            "doctype": "Dashboard Chart",
+            "chart_name": "Sync Status Distribution",
+            "chart_type": "Group By",
+            "document_type": "Forex Sync Log",
+            "group_by_type": "Count",
+            "group_by_based_on": "status",
+            "type": "Donut",
+            "color": "#ECAD4B",
+            "filters_json": "{}",
+            "is_public": 1,
+            "is_standard": 1,
+            "module": "Peasforex"
+        },
+        {
+            "doctype": "Dashboard Chart",
+            "chart_name": "Daily Sync Activity",
+            "chart_type": "Count",
+            "document_type": "Forex Sync Log",
+            "based_on": "sync_time",
+            "timeseries": 1,
+            "timespan": "Last Week",
+            "time_interval": "Daily",
+            "type": "Bar",
+            "color": "#7B68EE",
+            "filters_json": "{}",
+            "is_public": 1,
+            "is_standard": 1,
+            "module": "Peasforex"
+        },
+        {
+            "doctype": "Dashboard Chart",
+            "chart_name": "Rates by Type",
+            "chart_type": "Group By",
+            "document_type": "Forex Rate Log",
+            "group_by_type": "Count",
+            "group_by_based_on": "rate_type",
+            "type": "Pie",
+            "color": "#FF5858",
+            "filters_json": "{}",
+            "is_public": 1,
+            "is_standard": 1,
+            "module": "Peasforex"
+        }
+    ]
+    
+    for chart in charts:
+        chart_name = chart["chart_name"]
+        try:
+            if not frappe.db.exists("Dashboard Chart", chart_name):
+                log_debug(f"Creating Dashboard Chart: {chart_name}")
+                doc = frappe.get_doc(chart)
+                doc.insert(ignore_permissions=True)
+                log_info(f"Created Dashboard Chart: {chart_name}")
+            else:
+                log_debug(f"Dashboard Chart already exists: {chart_name}")
+        except Exception as e:
+            log_error(f"Failed to create Dashboard Chart {chart_name}: {str(e)}")
+    
+    log_info(f"Dashboard Charts creation completed")
+
+
+def create_number_cards():
+    """
+    Create Number Cards for the Forex Integration dashboard.
+    """
+    log_info("Creating Number Cards")
+    
+    cards = [
+        {
+            "doctype": "Number Card",
+            "name": "Total Forex Rates",
+            "label": "Total Forex Rates",
+            "type": "Document Type",
+            "document_type": "Forex Rate Log",
+            "function": "Count",
+            "filters_json": "{}",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Daily",
+            "color": "#2490EF",
+            "is_public": 1,
+            "is_standard": 1,
+            "module": "Peasforex"
+        },
+        {
+            "doctype": "Number Card",
+            "name": "Successful Syncs",
+            "label": "Successful Syncs",
+            "type": "Document Type",
+            "document_type": "Forex Sync Log",
+            "function": "Count",
+            "filters_json": "{\"status\": \"Success\"}",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Daily",
+            "color": "#29CD42",
+            "is_public": 1,
+            "is_standard": 1,
+            "module": "Peasforex"
+        },
+        {
+            "doctype": "Number Card",
+            "name": "Failed Syncs",
+            "label": "Failed Syncs",
+            "type": "Document Type",
+            "document_type": "Forex Sync Log",
+            "function": "Count",
+            "filters_json": "{\"status\": \"Error\"}",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Daily",
+            "color": "#FF5858",
+            "is_public": 1,
+            "is_standard": 1,
+            "module": "Peasforex"
+        },
+        {
+            "doctype": "Number Card",
+            "name": "Currency Pairs Tracked",
+            "label": "Currency Pairs",
+            "type": "Document Type",
+            "document_type": "Forex Rate Log",
+            "function": "Count",
+            "filters_json": "{}",
+            "show_percentage_stats": 0,
+            "color": "#ECAD4B",
+            "is_public": 1,
+            "is_standard": 1,
+            "module": "Peasforex"
+        },
+        {
+            "doctype": "Number Card",
+            "name": "Rates This Week",
+            "label": "Rates This Week",
+            "type": "Document Type",
+            "document_type": "Forex Rate Log",
+            "function": "Count",
+            "filters_json": "{}",
+            "show_percentage_stats": 1,
+            "stats_time_interval": "Weekly",
+            "color": "#7B68EE",
+            "is_public": 1,
+            "is_standard": 1,
+            "module": "Peasforex"
+        }
+    ]
+    
+    for card in cards:
+        card_name = card["name"]
+        try:
+            if not frappe.db.exists("Number Card", card_name):
+                log_debug(f"Creating Number Card: {card_name}")
+                doc = frappe.get_doc(card)
+                doc.insert(ignore_permissions=True)
+                log_info(f"Created Number Card: {card_name}")
+            else:
+                log_debug(f"Number Card already exists: {card_name}")
+        except Exception as e:
+            log_error(f"Failed to create Number Card {card_name}: {str(e)}")
+    
+    log_info(f"Number Cards creation completed")
