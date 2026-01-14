@@ -43,6 +43,30 @@ frappe.query_reports["Exchange Rate History"] = {
     // Default to Dashboard view
     "initial_depth": 1,
     
+    // Helper function to format date as "Jan 14" style
+    formatShortDate: function(dateStr) {
+        if (!dateStr) return '';
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        // Handle both YYYY-MM-DD string and date objects
+        let date;
+        if (typeof dateStr === 'string') {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                const month = months[parseInt(parts[1]) - 1];
+                const day = parseInt(parts[2]);
+                return `${month} ${day}`;
+            }
+            date = new Date(dateStr);
+        } else {
+            date = dateStr;
+        }
+        if (date instanceof Date && !isNaN(date)) {
+            return `${months[date.getMonth()]} ${date.getDate()}`;
+        }
+        return dateStr;
+    },
+    
     onload: function(report) {
         // Set default view to Chart/Dashboard
         report.page.add_inner_button(__("Refresh"), function() {
@@ -56,9 +80,11 @@ frappe.query_reports["Exchange Rate History"] = {
             return null;
         }
         
+        const self = frappe.query_reports["Exchange Rate History"];
+        
         // Group data by currency pair
         let datasets = {};
-        let labels = [];
+        let date_list = [];
         let label_set = new Set();
         
         result.forEach(row => {
@@ -72,8 +98,11 @@ frappe.query_reports["Exchange Rate History"] = {
             label_set.add(date);
         });
         
-        // Sort labels (dates)
-        labels = Array.from(label_set).sort();
+        // Sort dates and keep original for data lookup
+        date_list = Array.from(label_set).sort();
+        
+        // Format labels for display (short format like "Jan 14")
+        let labels = date_list.map(d => self.formatShortDate(d));
         
         // Build chart datasets
         let chart_datasets = [];
@@ -84,7 +113,7 @@ frappe.query_reports["Exchange Rate History"] = {
         let color_idx = 0;
         
         for (let pair in datasets) {
-            let values = labels.map(date => datasets[pair][date] || 0);
+            let values = date_list.map(date => datasets[pair][date] || 0);
             chart_datasets.push({
                 name: pair,
                 values: values,
@@ -109,7 +138,13 @@ frappe.query_reports["Exchange Rate History"] = {
                 hideDots: 0
             },
             tooltipOptions: {
-                formatTooltipX: d => frappe.datetime.str_to_user(d),
+                formatTooltipX: (d, i) => {
+                    // Show full date in tooltip
+                    if (date_list && date_list[i]) {
+                        return frappe.datetime.str_to_user(date_list[i]);
+                    }
+                    return d;
+                },
                 formatTooltipY: d => d ? d.toFixed(6) : "0"
             }
         };

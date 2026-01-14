@@ -3,6 +3,16 @@
 
 import frappe
 from frappe import _
+from frappe.utils import getdate
+
+
+def format_short_date(date_obj):
+    """Format date as 'Jan 14' style for chart labels"""
+    if not date_obj:
+        return ""
+    if isinstance(date_obj, str):
+        date_obj = getdate(date_obj)
+    return date_obj.strftime("%b %d")  # Returns "Jan 14"
 
 
 def execute(filters=None):
@@ -144,7 +154,7 @@ def get_chart(data, filters):
         # Sort chronologically and limit to last 60 data points
         spot_data = sorted(spot_data, key=lambda x: x.get("rate_date"))[-60:]
         
-        labels = [str(d.get("rate_date")) for d in spot_data]
+        labels = [format_short_date(d.get("rate_date")) for d in spot_data]
         values = [float(d.get("exchange_rate") or 0) for d in spot_data]
         
         return {
@@ -176,15 +186,18 @@ def get_chart(data, filters):
         for pair_data in pairs.values():
             for row in pair_data:
                 if row.get("rate_type") == "Spot":
-                    all_dates.add(str(row.get("rate_date")))
+                    all_dates.add(row.get("rate_date"))
         
         if not all_dates:
             # Fallback to all rate types
             for pair_data in pairs.values():
                 for row in pair_data:
-                    all_dates.add(str(row.get("rate_date")))
+                    all_dates.add(row.get("rate_date"))
         
-        labels = sorted(list(all_dates))[-30:]  # Last 30 dates
+        # Sort dates and take last 30
+        sorted_dates = sorted(list(all_dates))[-30:]
+        # Format labels for display
+        labels = [format_short_date(d) for d in sorted_dates]
         
         datasets = []
         colors = ["#7cd6fd", "#5e64ff", "#743ee2", "#ff5858", "#ffa00a", "#28a745", "#17a2b8", "#6c757d"]
@@ -194,14 +207,14 @@ def get_chart(data, filters):
             date_rate_map = {}
             for row in pair_data:
                 if row.get("rate_type") == "Spot":
-                    date_rate_map[str(row.get("rate_date"))] = float(row.get("exchange_rate") or 0)
+                    date_rate_map[row.get("rate_date")] = float(row.get("exchange_rate") or 0)
             
             # If no spot rates, use any rate
             if not date_rate_map:
                 for row in pair_data:
-                    date_rate_map[str(row.get("rate_date"))] = float(row.get("exchange_rate") or 0)
+                    date_rate_map[row.get("rate_date")] = float(row.get("exchange_rate") or 0)
             
-            values = [date_rate_map.get(date, 0) for date in labels]
+            values = [date_rate_map.get(date, 0) for date in sorted_dates]
             
             datasets.append({
                 "name": pair_key,
