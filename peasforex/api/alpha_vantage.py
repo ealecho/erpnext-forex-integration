@@ -6,6 +6,33 @@ import time
 import frappe
 from frappe import _
 
+# Module-level logger
+logger = frappe.logger("peasforex", allow_site=True, file_count=5)
+
+
+def log_debug(message, data=None):
+    """Log debug message with optional data"""
+    if data:
+        logger.debug(f"[Peasforex API] {message}: {data}")
+    else:
+        logger.debug(f"[Peasforex API] {message}")
+
+
+def log_info(message, data=None):
+    """Log info message with optional data"""
+    if data:
+        logger.info(f"[Peasforex API] {message}: {data}")
+    else:
+        logger.info(f"[Peasforex API] {message}")
+
+
+def log_error(message, data=None):
+    """Log error message with optional data"""
+    if data:
+        logger.error(f"[Peasforex API] {message}: {data}")
+    else:
+        logger.error(f"[Peasforex API] {message}")
+
 
 class RateLimiter:
     """Simple rate limiter for API calls"""
@@ -18,12 +45,15 @@ class RateLimiter:
         """
         self.delay = 60.0 / calls_per_minute
         self.last_call = 0
+        log_debug(f"RateLimiter initialized with {calls_per_minute} calls/min, delay: {self.delay}s")
     
     def wait(self):
         """Wait if necessary to respect rate limit"""
         elapsed = time.time() - self.last_call
         if elapsed < self.delay:
-            time.sleep(self.delay - elapsed)
+            wait_time = self.delay - elapsed
+            log_debug(f"Rate limiting: waiting {wait_time:.2f}s")
+            time.sleep(wait_time)
         self.last_call = time.time()
 
 
@@ -44,13 +74,24 @@ class AlphaVantageClient:
         Args:
             api_key: Alpha Vantage API key. If not provided, will fetch from settings.
         """
+        log_info("Initializing AlphaVantageClient")
+        
         if api_key:
             self.api_key = api_key
+            log_debug("Using provided API key")
         else:
-            settings = frappe.get_single("Forex Settings")
-            self.api_key = settings.get_password("api_key")
+            log_debug("Fetching API key from Forex Settings")
+            try:
+                settings = frappe.get_single("Forex Settings")
+                self.api_key = settings.get_password("api_key")
+                log_debug("API key loaded from settings")
+            except Exception as e:
+                log_error(f"Failed to load Forex Settings: {str(e)}")
+                frappe.log_error(frappe.get_traceback(), "Peasforex: Settings Load Error")
+                raise
         
         if not self.api_key:
+            log_error("No API key configured")
             raise ValueError(_("Alpha Vantage API key is not configured"))
         
         self.rate_limiter = RateLimiter(calls_per_minute=60)
@@ -58,6 +99,7 @@ class AlphaVantageClient:
         self.session.headers.update({
             "User-Agent": "ERPNext-Peasforex/1.0"
         })
+        log_info("AlphaVantageClient initialized successfully")
     
     def _make_request(self, params):
         """
@@ -71,40 +113,54 @@ class AlphaVantageClient:
         """
         params["apikey"] = self.api_key
         
+        # Log request (without API key)
+        safe_params = {k: v for k, v in params.items() if k != "apikey"}
+        log_debug(f"Making API request", safe_params)
+        
         # Apply rate limiting
         self.rate_limiter.wait()
         
         try:
+            log_debug(f"Sending GET request to {self.BASE_URL}")
             response = self.session.get(
                 self.BASE_URL,
                 params=params,
                 timeout=self.DEFAULT_TIMEOUT
             )
+            
+            log_debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             
             data = response.json()
             
             # Check for API error messages
             if "Error Message" in data:
+                log_error(f"API Error: {data['Error Message']}")
                 return {"error": data["Error Message"], "raw": data}
             
             if "Note" in data:
                 # Rate limit exceeded
+                log_error(f"Rate limited: {data['Note']}")
                 return {"error": data["Note"], "rate_limited": True, "raw": data}
             
             if "Information" in data:
                 # Usually means API key issues
+                log_error(f"API Information: {data['Information']}")
                 return {"error": data["Information"], "raw": data}
             
+            log_debug("API request successful")
             return data
             
         except requests.exceptions.Timeout:
+            log_error("API request timed out")
             frappe.log_error("Alpha Vantage API timeout", "Forex API Error")
             return {"error": _("API request timed out")}
         except requests.exceptions.RequestException as e:
+            log_error(f"Request exception: {str(e)}")
             frappe.log_error(f"Alpha Vantage API error: {str(e)}", "Forex API Error")
             return {"error": str(e)}
         except ValueError as e:
+            log_error(f"JSON parsing error: {str(e)}")
             frappe.log_error(f"Invalid JSON response: {str(e)}", "Forex API Error")
             return {"error": _("Invalid API response")}
     
@@ -130,6 +186,8 @@ class AlphaVantageClient:
                 'raw': dict  # Original API response
             }
         """
+        log_info(f"Getting exchange rate: {from_currency} -> {to_currency}")
+        
         params = {
             "function": "CURRENCY_EXCHANGE_RATE",
             "from_currency": from_currency,
@@ -144,16 +202,27 @@ class AlphaVantageClient:
         try:
             rate_data = data.get("Realtime Currency Exchange Rate", {})
             
+            if not rate_data:
+                log_error("No rate data in response", data)
+                return {"error": "No exchange rate data in response", "raw": data}
+            
+            exchange_rate = float(rate_data.get("5. Exchange Rate", 0))
+            bid_price = float(rate_data.get("8. Bid Price", 0))
+            ask_price = float(rate_data.get("9. Ask Price", 0))
+            
+            log_info(f"Exchange rate {from_currency}->{to_currency}: {exchange_rate}")
+            
             return {
-                "exchange_rate": float(rate_data.get("5. Exchange Rate", 0)),
-                "bid_price": float(rate_data.get("8. Bid Price", 0)),
-                "ask_price": float(rate_data.get("9. Ask Price", 0)),
+                "exchange_rate": exchange_rate,
+                "bid_price": bid_price,
+                "ask_price": ask_price,
                 "from_currency": rate_data.get("1. From_Currency Code"),
                 "to_currency": rate_data.get("3. To_Currency Code"),
                 "last_refreshed": rate_data.get("6. Last Refreshed"),
                 "raw": data
             }
         except (KeyError, TypeError, ValueError) as e:
+            log_error(f"Failed to parse exchange rate: {str(e)}")
             return {"error": f"Failed to parse exchange rate: {str(e)}", "raw": data}
     
     def get_fx_daily(self, from_currency, to_currency, outputsize="compact"):
@@ -182,6 +251,8 @@ class AlphaVantageClient:
                 'raw': dict
             }
         """
+        log_info(f"Getting FX daily: {from_currency} -> {to_currency} (outputsize: {outputsize})")
+        
         params = {
             "function": "FX_DAILY",
             "from_symbol": from_currency,
@@ -198,6 +269,10 @@ class AlphaVantageClient:
             meta_data = data.get("Meta Data", {})
             time_series_raw = data.get("Time Series FX (Daily)", {})
             
+            if not time_series_raw:
+                log_error("No time series data in response")
+                return {"error": "No time series data in response", "raw": data}
+            
             time_series = {}
             for date_str, values in time_series_raw.items():
                 time_series[date_str] = {
@@ -207,12 +282,15 @@ class AlphaVantageClient:
                     "close": float(values.get("4. close", 0))
                 }
             
+            log_info(f"Received {len(time_series)} daily data points")
+            
             return {
                 "time_series": time_series,
                 "meta_data": meta_data,
                 "raw": data
             }
         except (KeyError, TypeError, ValueError) as e:
+            log_error(f"Failed to parse daily data: {str(e)}")
             return {"error": f"Failed to parse daily data: {str(e)}", "raw": data}
     
     def get_fx_monthly(self, from_currency, to_currency):
@@ -226,6 +304,8 @@ class AlphaVantageClient:
         Returns:
             dict: Similar to get_fx_daily but with monthly data
         """
+        log_info(f"Getting FX monthly: {from_currency} -> {to_currency}")
+        
         params = {
             "function": "FX_MONTHLY",
             "from_symbol": from_currency,
@@ -241,6 +321,10 @@ class AlphaVantageClient:
             meta_data = data.get("Meta Data", {})
             time_series_raw = data.get("Time Series FX (Monthly)", {})
             
+            if not time_series_raw:
+                log_error("No monthly time series data in response")
+                return {"error": "No time series data in response", "raw": data}
+            
             time_series = {}
             for date_str, values in time_series_raw.items():
                 time_series[date_str] = {
@@ -250,12 +334,15 @@ class AlphaVantageClient:
                     "close": float(values.get("4. close", 0))
                 }
             
+            log_info(f"Received {len(time_series)} monthly data points")
+            
             return {
                 "time_series": time_series,
                 "meta_data": meta_data,
                 "raw": data
             }
         except (KeyError, TypeError, ValueError) as e:
+            log_error(f"Failed to parse monthly data: {str(e)}")
             return {"error": f"Failed to parse monthly data: {str(e)}", "raw": data}
     
     def get_previous_month_rates(self, from_currency, to_currency):
@@ -281,11 +368,15 @@ class AlphaVantageClient:
         from datetime import datetime, timedelta
         from dateutil.relativedelta import relativedelta
         
+        log_info(f"Getting previous month rates: {from_currency} -> {to_currency}")
+        
         # Get previous month date range
         today = datetime.now()
         first_of_this_month = today.replace(day=1)
         last_of_prev_month = first_of_this_month - timedelta(days=1)
         first_of_prev_month = last_of_prev_month.replace(day=1)
+        
+        log_debug(f"Previous month: {first_of_prev_month.strftime('%Y-%m-%d')} to {last_of_prev_month.strftime('%Y-%m-%d')}")
         
         # Get daily data (compact should cover last 100 days which is enough)
         daily_data = self.get_fx_daily(from_currency, to_currency, outputsize="compact")
@@ -296,6 +387,7 @@ class AlphaVantageClient:
         time_series = daily_data.get("time_series", {})
         
         if not time_series:
+            log_error("No time series data available")
             return {"error": "No time series data available"}
         
         # Filter for previous month
@@ -322,6 +414,7 @@ class AlphaVantageClient:
                 continue
         
         if not prev_month_rates:
+            log_error(f"No data available for previous month ({last_of_prev_month.strftime('%Y-%m')})")
             return {"error": f"No data available for previous month ({last_of_prev_month.strftime('%Y-%m')})"}
         
         # Calculate averages and extremes
@@ -329,11 +422,17 @@ class AlphaVantageClient:
         highs = [r["high"] for r in prev_month_rates]
         lows = [r["low"] for r in prev_month_rates]
         
+        avg_rate = sum(closes) / len(closes)
+        high_rate = max(highs)
+        low_rate = min(lows)
+        
+        log_info(f"Previous month rates calculated: closing={closing_rate}, avg={avg_rate:.6f}, high={high_rate}, low={low_rate}, data_points={len(prev_month_rates)}")
+        
         return {
             "closing_rate": closing_rate,
-            "average_rate": sum(closes) / len(closes),
-            "high_rate": max(highs),  # Prudency for expenses
-            "low_rate": min(lows),    # Prudency for income
+            "average_rate": avg_rate,
+            "high_rate": high_rate,  # Prudency for expenses
+            "low_rate": low_rate,    # Prudency for income
             "month": last_of_prev_month.strftime("%Y-%m"),
             "month_end_date": last_of_prev_month.strftime("%Y-%m-%d"),
             "data_points": len(prev_month_rates),
