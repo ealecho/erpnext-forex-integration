@@ -172,7 +172,7 @@ class ForexSettings(Document):
 
     @frappe.whitelist()
     def calculate_peas_prudency(self):
-        """Calculate PEAS Internal Prudency rates for all currency pairs"""
+        """Calculate PEAS Internal Prudency rates for all currency pairss"""
         log_info("Manual calculation triggered: calculate_peas_prudency")
 
         if not self.enabled:
