@@ -20,6 +20,10 @@ frappe.ui.form.on("Forex Settings", {
             frm.add_custom_button(__("Backfill 6 Months"), function() {
                 frm.trigger("backfill_historical");
             }, __("Sync Actions"));
+            
+            frm.add_custom_button(__("Calculate PEAS Prudency"), function() {
+                frm.trigger("calculate_peas_prudency");
+            }, __("Sync Actions"));
         }
         
         // Add default currency pairs button
@@ -130,6 +134,37 @@ frappe.ui.form.on("Forex Settings", {
                 }
             });
         }, __("Backfill Historical Data"), __("Start Backfill"));
+    },
+    
+    calculate_peas_prudency: function(frm) {
+        frappe.confirm(
+            __("This will calculate PEAS Internal Prudency rates for all currency pairs that have at least 6 months of Monthly Average data. Continue?"),
+            function() {
+                frappe.call({
+                    method: "calculate_peas_prudency",
+                    doc: frm.doc,
+                    freeze: true,
+                    freeze_message: __("Calculating PEAS Internal Prudency rates..."),
+                    callback: function(r) {
+                        if (r.message) {
+                            if (r.message.status === "success") {
+                                frappe.msgprint({
+                                    title: __("PEAS Prudency Calculation Complete"),
+                                    indicator: "green",
+                                    message: r.message.message
+                                });
+                            } else {
+                                frappe.msgprint({
+                                    title: __("Error"),
+                                    indicator: "red",
+                                    message: r.message.message
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        );
     },
     
     add_default_pairs: function(frm) {
