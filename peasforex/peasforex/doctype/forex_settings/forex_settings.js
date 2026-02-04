@@ -17,7 +17,7 @@ frappe.ui.form.on("Forex Settings", {
                 frm.trigger("sync_monthly_now");
             }, __("Sync Actions"));
             
-            frm.add_custom_button(__("Backfill 2 Months"), function() {
+            frm.add_custom_button(__("Backfill 6 Months"), function() {
                 frm.trigger("backfill_historical");
             }, __("Sync Actions"));
         }
@@ -108,7 +108,7 @@ frappe.ui.form.on("Forex Settings", {
                 label: __("Number of Months"),
                 fieldname: "months",
                 fieldtype: "Int",
-                default: 2,
+                default: 6,
                 description: __("Number of months to backfill historical data")
             }
         ], function(values) {
