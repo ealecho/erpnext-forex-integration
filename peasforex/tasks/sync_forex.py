@@ -709,6 +709,9 @@ def backfill_historical_rates(months=6):
     success_count = 0
     error_count = 0
 
+    # Track results for summary
+    pair_results = []
+
     for idx, pair in enumerate(enabled_pairs):
         from_currency = pair["from_currency"]
         to_currency = pair["to_currency"]
@@ -721,9 +724,11 @@ def backfill_historical_rates(months=6):
         )
 
         try:
-            # Get daily data (full to ensure we have enough history)
-            log_debug(f"Fetching daily data for {pair_str}")
-            result = client.get_fx_daily(from_currency, to_currency, outputsize="full")
+            # Get daily data with fallback (full to ensure we have enough history)
+            log_debug(f"Fetching daily data for {pair_str} with fallback")
+            result = client.get_fx_daily_with_fallback(
+                from_currency, to_currency, outputsize="full"
+            )
 
             if result.get("error"):
                 log_error(f"API error for {pair_str}: {result.get('error')}")
@@ -734,6 +739,14 @@ def backfill_historical_rates(months=6):
                     error_message=result.get("error"),
                 )
                 error_count += 1
+                pair_results.append(
+                    {
+                        "pair": pair_str,
+                        "status": "ERROR",
+                        "message": result.get("error"),
+                        "days": 0,
+                    }
+                )
                 continue
 
             time_series = result.get("time_series", {})
@@ -747,7 +760,27 @@ def backfill_historical_rates(months=6):
                     error_message="No time series data returned",
                 )
                 error_count += 1
+                pair_results.append(
+                    {
+                        "pair": pair_str,
+                        "status": "ERROR",
+                        "message": "No time series data",
+                        "days": 0,
+                    }
+                )
                 continue
+
+            # Log if inverse rates were used
+            if result.get("is_inverse"):
+                log_info(
+                    f"Using inverse rates for {pair_str} (calculated from {to_currency}->{from_currency})"
+                )
+
+            # Log if spot fallback was used
+            if result.get("is_spot_fallback"):
+                log_info(
+                    f"Using spot rate fallback for {pair_str} (only today's rate available)"
+                )
 
             log_debug(f"Received {len(time_series)} data points for {pair_str}")
 
@@ -810,9 +843,20 @@ def backfill_historical_rates(months=6):
                 sync_type="Backfill",
                 currency_pair=pair_str,
                 status="Success",
-                error_message=f"Processed {days_processed} days",
+                error_message=f"Processed {days_processed} days"
+                + (" (inverse)" if result.get("is_inverse") else "")
+                + (" (spot fallback)" if result.get("is_spot_fallback") else ""),
             )
             success_count += 1
+            pair_results.append(
+                {
+                    "pair": pair_str,
+                    "status": "SUCCESS",
+                    "message": f"{days_processed} days"
+                    + (" (inverse)" if result.get("is_inverse") else ""),
+                    "days": days_processed,
+                }
+            )
             log_info(f"Backfilled {days_processed} days for {pair_str}")
 
             frappe.db.commit()
@@ -829,6 +873,9 @@ def backfill_historical_rates(months=6):
                 error_message=str(e),
             )
             error_count += 1
+            pair_results.append(
+                {"pair": pair_str, "status": "ERROR", "message": str(e)[:50], "days": 0}
+            )
 
     # Also backfill monthly rates for each past month
     log_info("Backfilling monthly rates...")
@@ -837,6 +884,15 @@ def backfill_historical_rates(months=6):
         log_debug(f"Backfilling month: {month_date}")
         backfill_month_rates(month_date, client, enabled_pairs, settings)
 
+    # Print summary
+    log_info("=" * 50)
+    log_info("BACKFILL SUMMARY")
+    log_info("=" * 50)
+    for result in pair_results:
+        status_icon = "✓" if result["status"] == "SUCCESS" else "✗"
+        log_info(
+            f"  {status_icon} {result['pair']}: {result['status']} - {result['message']}"
+        )
     log_info("=" * 50)
     log_info(
         f"Forex backfill completed: {success_count} pairs success, {error_count} errors"
@@ -847,6 +903,7 @@ def backfill_historical_rates(months=6):
 def backfill_month_rates(month_date, client, enabled_pairs, settings):
     """
     Backfill monthly rates (closing, average, prudency) for a specific month.
+    Uses fallback strategies for exotic currency pairs.
     """
     from datetime import datetime
 
@@ -861,8 +918,10 @@ def backfill_month_rates(month_date, client, enabled_pairs, settings):
         pair_str = f"{from_currency}-{to_currency}"
 
         try:
-            # Get daily data
-            result = client.get_fx_daily(from_currency, to_currency, outputsize="full")
+            # Get daily data with fallback
+            result = client.get_fx_daily_with_fallback(
+                from_currency, to_currency, outputsize="full"
+            )
 
             if result.get("error"):
                 log_error(f"API error for {pair_str}: {result.get('error')}")
