@@ -117,13 +117,14 @@ class PrudencyCalculator {
     
     setup_mode_toggle() {
         const me = this;
-        const toggle_input = this.wrapper.find('.mode-toggle-input');
+        const mode_buttons = this.wrapper.find('.mode-btn');
         
-        // Handle toggle change
-        toggle_input.on('change', function() {
-            const is_expense_mode = $(this).is(':checked');
+        // Handle button clicks
+        mode_buttons.on('click', function() {
+            const btn = $(this);
+            const mode = btn.data('mode');
             
-            if (is_expense_mode) {
+            if (mode === 'expense_planning') {
                 me.state.mode = 'expense_planning';
                 me.state.prudency_factor = 1.05;
             } else {
@@ -142,18 +143,21 @@ class PrudencyCalculator {
     update_mode_ui() {
         const is_expense_mode = this.state.mode === 'expense_planning';
         
-        // Update toggle label styling
-        const proposal_label = this.wrapper.find('.mode-label-proposal');
-        const expense_label = this.wrapper.find('.mode-label-expense');
+        // Update button styling
+        const proposal_btn = this.wrapper.find('.mode-btn-proposal');
+        const expense_btn = this.wrapper.find('.mode-btn-expense');
+        const factor_badge = this.wrapper.find('.factor-badge');
         
         if (is_expense_mode) {
-            proposal_label.removeClass('active');
-            expense_label.addClass('active');
+            proposal_btn.removeClass('active');
+            expense_btn.addClass('active');
             this.wrapper.find('.mode-description-text').text('Buffer for expense planning (factor: 1.05)');
+            factor_badge.removeClass('factor-badge-proposal').addClass('factor-badge-expense').text('Expense Mode');
         } else {
-            proposal_label.addClass('active');
-            expense_label.removeClass('active');
+            proposal_btn.addClass('active');
+            expense_btn.removeClass('active');
             this.wrapper.find('.mode-description-text').text('Conservative estimate for grant proposals (factor: 0.95)');
+            factor_badge.removeClass('factor-badge-expense').addClass('factor-badge-proposal').text('Proposal Mode');
         }
         
         // Update prudency factor display
@@ -221,7 +225,7 @@ class PrudencyCalculator {
             tbody.append(`
                 <tr>
                     <td>${row.month}</td>
-                    <td style="text-align: right;">${row.exchange_rate.toFixed(2)}</td>
+                    <td class="text-right">${row.exchange_rate.toFixed(2)}</td>
                 </tr>
             `);
         });
@@ -248,7 +252,7 @@ class PrudencyCalculator {
             result_section.removeClass('disabled-state');
             
             // Enable input fields
-            this.wrapper.find('.mode-toggle-input').prop('disabled', false);
+            this.wrapper.find('.mode-btn').prop('disabled', false);
             this.target_amount_field.$input.prop('disabled', false);
         } else {
             // Show warning, disable calculations
@@ -268,7 +272,7 @@ class PrudencyCalculator {
             result_section.addClass('disabled-state');
             
             // Disable input fields
-            this.wrapper.find('.mode-toggle-input').prop('disabled', true);
+            this.wrapper.find('.mode-btn').prop('disabled', true);
             this.target_amount_field.$input.prop('disabled', true);
             
             // Clear results
