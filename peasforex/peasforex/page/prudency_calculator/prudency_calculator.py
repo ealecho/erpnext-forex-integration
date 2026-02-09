@@ -3,7 +3,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import getdate, formatdate, add_months, get_last_day
+from frappe.utils import getdate, formatdate, get_last_day
 
 
 @frappe.whitelist()
@@ -49,18 +49,13 @@ def get_monthly_averages(grant_currency, local_currency, as_of_date=None):
             "error": _("Grant Currency and Local Currency must be different"),
         }
 
-    # Determine date range
+    # Determine end date
     if as_of_date:
         end_date = get_last_day(getdate(as_of_date))
     else:
         end_date = get_last_day(getdate())
 
-    # Start date is 5 months before end date (to get 6 months total)
-    start_date = add_months(end_date, -5)
-    # Set to first day of that month
-    start_date = getdate(start_date.replace(day=1))
-
-    # Fetch Monthly Average rates within the date range
+    # Fetch the 6 most recent Monthly Average rates up to the selected date
     monthly_averages = frappe.db.sql(
         """
         SELECT rate_date, exchange_rate
@@ -68,7 +63,6 @@ def get_monthly_averages(grant_currency, local_currency, as_of_date=None):
         WHERE from_currency = %(grant_currency)s
         AND to_currency = %(local_currency)s
         AND rate_type = 'Monthly Average'
-        AND rate_date >= %(start_date)s
         AND rate_date <= %(end_date)s
         ORDER BY rate_date DESC
         LIMIT 6
@@ -76,7 +70,6 @@ def get_monthly_averages(grant_currency, local_currency, as_of_date=None):
         {
             "grant_currency": grant_currency,
             "local_currency": local_currency,
-            "start_date": start_date,
             "end_date": end_date,
         },
         as_dict=True,
