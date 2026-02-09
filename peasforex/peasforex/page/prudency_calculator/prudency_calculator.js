@@ -355,7 +355,7 @@ class PrudencyCalculator {
         
         if (this.state.has_sufficient_data) {
             // Hide warning, enable calculations
-            warning_div.hide();
+            warning_div.addClass('hidden');
             rates_table.show();
             calc_sections.removeClass('disabled-state');
             result_sections.removeClass('disabled-state');
@@ -367,7 +367,7 @@ class PrudencyCalculator {
             this.expense_grant_amount_field.$input.prop('disabled', false);
         } else {
             // Show warning, disable calculations
-            warning_div.show();
+            warning_div.removeClass('hidden');
             warning_div.find('.warning-message').text(
                 this.state.error || `Only ${this.state.months.length} months of data available. Need 6 months to calculate.`
             );

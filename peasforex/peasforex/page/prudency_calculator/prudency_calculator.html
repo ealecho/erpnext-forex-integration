@@ -30,7 +30,7 @@
         </div>
         <div class="card-body">
             <!-- Warning message (hidden by default) -->
-            <div class="insufficient-data-warning" style="display: none;">
+            <div class="insufficient-data-warning hidden">
                 <div class="alert alert-warning">
                     <strong>Insufficient Data</strong>
                     <p class="warning-message"></p>
@@ -210,6 +210,10 @@
 .prudency-calculator-container .disabled-state {
     opacity: 0.5;
     pointer-events: none;
+}
+
+.prudency-calculator-container .hidden {
+    display: none !important;
 }
 
 /* Tab Styles */
