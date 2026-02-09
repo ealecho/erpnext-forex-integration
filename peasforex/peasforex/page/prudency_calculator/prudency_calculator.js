@@ -22,6 +22,7 @@ class PrudencyCalculator {
             mode: 'proposal', // 'proposal' or 'expense'
             grant_currency: 'GBP',
             local_currency: 'UGX',
+            as_of_month: null, // Will be set in setup_fields
             months: [],
             grand_average: null,
             has_sufficient_data: false,
@@ -120,6 +121,26 @@ class PrudencyCalculator {
             render_input: true
         });
         this.local_currency_field.set_value('UGX');
+        
+        // As of Month field (default to current month)
+        const today = new Date();
+        const currentMonth = today.toISOString().slice(0, 7) + '-01'; // Format: YYYY-MM-01
+        
+        this.as_of_month_field = frappe.ui.form.make_control({
+            df: {
+                fieldtype: 'Date',
+                fieldname: 'as_of_month',
+                label: 'As of Month',
+                default: currentMonth,
+                change: function() {
+                    me.state.as_of_month = this.get_value();
+                }
+            },
+            parent: this.wrapper.find('.as-of-month-field'),
+            render_input: true
+        });
+        this.as_of_month_field.set_value(currentMonth);
+        this.state.as_of_month = currentMonth;
         
         // Load Rates button
         this.load_btn = frappe.ui.form.make_control({
@@ -230,10 +251,19 @@ class PrudencyCalculator {
         const me = this;
         const grant_currency = this.grant_currency_field.get_value();
         const local_currency = this.local_currency_field.get_value();
+        const as_of_month = this.as_of_month_field.get_value();
         
         if (!grant_currency || !local_currency) {
             frappe.show_alert({
                 message: __('Please select both currencies'),
+                indicator: 'orange'
+            });
+            return;
+        }
+        
+        if (!as_of_month) {
+            frappe.show_alert({
+                message: __('Please select a month'),
                 indicator: 'orange'
             });
             return;
@@ -251,7 +281,8 @@ class PrudencyCalculator {
             method: 'peasforex.peasforex.page.prudency_calculator.prudency_calculator.get_monthly_averages',
             args: {
                 grant_currency: grant_currency,
-                local_currency: local_currency
+                local_currency: local_currency,
+                as_of_date: as_of_month
             },
             freeze: true,
             freeze_message: __('Loading rates...'),
@@ -259,11 +290,23 @@ class PrudencyCalculator {
                 if (r.message) {
                     me.update_state(r.message);
                     me.render_rates_table();
+                    me.update_date_range_label(r.message);
                     me.update_ui_state();
                     me.recalculate();
                 }
             }
         });
+    }
+    
+    update_date_range_label(data) {
+        const date_range_label = this.wrapper.find('.date-range-label');
+        if (data.months && data.months.length > 0) {
+            const start_month = data.months[data.months.length - 1].month;
+            const end_month = data.months[0].month;
+            date_range_label.text(`${start_month} - ${end_month}`);
+        } else {
+            date_range_label.text('');
+        }
     }
     
     update_state(data) {

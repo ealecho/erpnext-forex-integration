@@ -3,17 +3,18 @@
 
 import frappe
 from frappe import _
-from frappe.utils import getdate, formatdate
+from frappe.utils import getdate, formatdate, add_months, get_last_day
 
 
 @frappe.whitelist()
-def get_monthly_averages(grant_currency, local_currency):
+def get_monthly_averages(grant_currency, local_currency, as_of_date=None):
     """
-    Fetch last 6 Monthly Average rates for the currency pair.
+    Fetch 6 Monthly Average rates for the currency pair ending on the specified month.
 
     Args:
         grant_currency: Source currency (e.g., 'GBP')
         local_currency: Target currency (e.g., 'UGX')
+        as_of_date: End date for the 6-month range (defaults to today)
 
     Returns:
         dict: {
@@ -48,7 +49,18 @@ def get_monthly_averages(grant_currency, local_currency):
             "error": _("Grant Currency and Local Currency must be different"),
         }
 
-    # Fetch last 6 Monthly Average rates
+    # Determine date range
+    if as_of_date:
+        end_date = get_last_day(getdate(as_of_date))
+    else:
+        end_date = get_last_day(getdate())
+
+    # Start date is 5 months before end date (to get 6 months total)
+    start_date = add_months(end_date, -5)
+    # Set to first day of that month
+    start_date = getdate(start_date.replace(day=1))
+
+    # Fetch Monthly Average rates within the date range
     monthly_averages = frappe.db.sql(
         """
         SELECT rate_date, exchange_rate
@@ -56,10 +68,17 @@ def get_monthly_averages(grant_currency, local_currency):
         WHERE from_currency = %(grant_currency)s
         AND to_currency = %(local_currency)s
         AND rate_type = 'Monthly Average'
+        AND rate_date >= %(start_date)s
+        AND rate_date <= %(end_date)s
         ORDER BY rate_date DESC
         LIMIT 6
     """,
-        {"grant_currency": grant_currency, "local_currency": local_currency},
+        {
+            "grant_currency": grant_currency,
+            "local_currency": local_currency,
+            "start_date": start_date,
+            "end_date": end_date,
+        },
         as_dict=True,
     )
 
