@@ -147,7 +147,7 @@ class PrudencyCalculator {
         this.wrapper.find('.grant-currency-label').text(grant_currency);
         
         frappe.call({
-            method: 'peasforex.peasforex.prudency_calculator.prudency_calculator.get_monthly_averages',
+            method: 'peasforex.peasforex.page.prudency_calculator.prudency_calculator.get_monthly_averages',
             args: {
                 grant_currency: grant_currency,
                 local_currency: local_currency
