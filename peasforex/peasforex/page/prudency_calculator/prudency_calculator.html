@@ -1,87 +1,52 @@
 <div class="prudency-calculator-container">
     <!-- Header -->
     <div class="page-header">
-        <div class="header-content">
-            <div class="header-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="1" x2="12" y2="23"></line>
-                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                </svg>
-            </div>
-            <div class="header-text">
-                <h1>PEAS Prudency Calculator</h1>
-                <p>Calculate expected grant amounts using a 6-month rolling average with prudency factor</p>
-            </div>
-        </div>
+        <h2>PEAS Prudency Calculator</h2>
+        <p class="text-muted">Calculate expected grant amounts using a 6-month rolling average with prudency factor</p>
     </div>
 
     <!-- Currency Selection Section -->
-    <div class="card currency-selection-section">
-        <div class="card-title">
-            <span class="card-title-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                </svg>
-            </span>
-            Currency Selection
+    <div class="frappe-card currency-selection-section">
+        <div class="card-header">
+            <h5>Currency Selection</h5>
         </div>
-        <div class="card-content">
-            <div class="currency-grid">
-                <div class="field-wrapper">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
                     <div class="grant-currency-field"></div>
                 </div>
-                <div class="field-wrapper">
+                <div class="col-md-4">
                     <div class="local-currency-field"></div>
                 </div>
-                <div class="field-wrapper btn-wrapper">
-                    <div class="load-rates-btn"></div>
+                <div class="col-md-4">
+                    <div class="load-rates-btn" style="margin-top: 25px;"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Rates Table Section -->
-    <div class="card rates-section">
-        <div class="card-title">
-            <span class="card-title-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 3v18h18"></path>
-                    <path d="m19 9-5 5-4-4-3 3"></path>
-                </svg>
-            </span>
-            Monthly Average Exchange Rates
-            <span class="pair-badge">
-                <span class="pair-label">GBP → UGX</span>
-            </span>
+    <div class="frappe-card rates-section" style="margin-top: 20px;">
+        <div class="card-header">
+            <h5>Monthly Average Exchange Rates (<span class="pair-label">GBP → UGX</span>)</h5>
         </div>
-        <div class="card-content">
+        <div class="card-body">
             <!-- Warning message (hidden by default) -->
             <div class="insufficient-data-warning" style="display: none;">
-                <div class="alert-box alert-warning">
-                    <div class="alert-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
-                            <line x1="12" y1="9" x2="12" y2="13"></line>
-                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                        </svg>
-                    </div>
-                    <div class="alert-content">
-                        <strong>Insufficient Data</strong>
-                        <p class="warning-message"></p>
-                        <p class="alert-hint">Please run a backfill or wait for more monthly syncs.</p>
-                    </div>
+                <div class="alert alert-warning">
+                    <strong>Insufficient Data</strong>
+                    <p class="warning-message"></p>
+                    <p class="text-muted">Please run a backfill or wait for more monthly syncs.</p>
                 </div>
             </div>
             
             <!-- Rates table -->
             <div class="rates-table-container">
-                <table class="data-table">
+                <table class="table table-bordered rates-table">
                     <thead>
                         <tr>
                             <th>Month</th>
-                            <th class="text-right">Exchange Rate</th>
+                            <th style="text-align: right;">Exchange Rate</th>
                         </tr>
                     </thead>
                     <tbody class="rates-table-body">
@@ -89,102 +54,69 @@
                     </tbody>
                 </table>
                 
-                <div class="summary-row">
-                    <div class="summary-label">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-                        </svg>
-                        Grand Average (6 months)
-                    </div>
-                    <div class="summary-value grand-average-value">-</div>
+                <div class="grand-average-row" style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                    <strong>Grand Average (6 months):</strong>
+                    <span class="grand-average-value" style="float: right; font-weight: bold;">-</span>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Calculation Section -->
-    <div class="card calculation-section">
-        <div class="card-title">
-            <span class="card-title-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="4" y="2" width="16" height="20" rx="2"></rect>
-                    <line x1="8" y1="6" x2="16" y2="6"></line>
-                    <line x1="16" y1="14" x2="16" y2="18"></line>
-                    <path d="M16 10h.01"></path>
-                    <path d="M12 10h.01"></path>
-                    <path d="M8 10h.01"></path>
-                    <path d="M12 14h.01"></path>
-                    <path d="M8 14h.01"></path>
-                    <path d="M12 18h.01"></path>
-                    <path d="M8 18h.01"></path>
-                </svg>
-            </span>
-            Prudency Calculation
+    <div class="frappe-card calculation-section" style="margin-top: 20px;">
+        <div class="card-header">
+            <h5>Prudency Calculation</h5>
         </div>
-        <div class="card-content">
+        <div class="card-body">
             <!-- Mode Toggle -->
-            <div class="mode-toggle-section">
-                <div class="mode-toggle-wrapper">
-                    <button class="mode-btn mode-btn-proposal active" data-mode="proposal">
-                        <span class="mode-btn-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
-                            </svg>
-                        </span>
-                        Proposal
-                    </button>
-                    <button class="mode-btn mode-btn-expense" data-mode="expense_planning">
-                        <span class="mode-btn-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                                <line x1="1" y1="10" x2="23" y2="10"></line>
-                            </svg>
-                        </span>
-                        Expense Planning
-                    </button>
+            <div class="mode-toggle-section" style="margin-bottom: 25px;">
+                <div class="mode-toggle-container">
+                    <span class="mode-label mode-label-proposal active">Proposal</span>
+                    <label class="mode-toggle-switch">
+                        <input type="checkbox" class="mode-toggle-input">
+                        <span class="mode-toggle-slider"></span>
+                    </label>
+                    <span class="mode-label mode-label-expense">Expense Planning</span>
                 </div>
-                <p class="mode-description mode-description-text">Conservative estimate for grant proposals (factor: 0.95)</p>
+                <div class="mode-description text-muted" style="margin-top: 8px; font-size: 12px;">
+                    <span class="mode-description-text">Conservative estimate for grant proposals (factor: 0.95)</span>
+                </div>
             </div>
             
-            <div class="calc-grid">
-                <div class="factor-card">
-                    <div class="factor-label">Prudency Factor</div>
-                    <div class="factor-value prudency-factor-value-display">0.95</div>
-                    <div class="factor-badge factor-badge-proposal">Proposal Mode</div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="prudency-factor-display">
+                        <label class="control-label">Prudency Factor</label>
+                        <div class="prudency-factor-value-display" style="font-size: 24px; font-weight: bold; padding: 10px 0;">0.95</div>
+                    </div>
                 </div>
-                <div class="rate-card">
-                    <div class="rate-label">Prudency Rate</div>
-                    <div class="rate-value prudency-rate-value">-</div>
-                    <div class="rate-formula prudency-rate-formula"></div>
+                <div class="col-md-6">
+                    <div class="prudency-rate-display" style="margin-top: 25px;">
+                        <strong>Prudency Rate:</strong>
+                        <span class="prudency-rate-value" style="float: right; font-size: 18px; font-weight: bold;">-</span>
+                        <br>
+                        <span class="prudency-rate-formula text-muted" style="font-size: 12px;"></span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Result Section -->
-    <div class="card result-section">
-        <div class="card-title">
-            <span class="card-title-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                </svg>
-            </span>
-            Grant Amount Calculation
+    <div class="frappe-card result-section" style="margin-top: 20px;">
+        <div class="card-header">
+            <h5>Grant Amount Calculation</h5>
         </div>
-        <div class="card-content">
-            <div class="result-grid">
-                <div class="input-section">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
                     <div class="target-amount-field"></div>
                 </div>
-                <div class="output-section">
-                    <div class="result-box">
-                        <div class="result-label">Expected Grant Amount (<span class="grant-currency-label">GBP</span>)</div>
-                        <div class="result-value expected-grant-value">-</div>
-                        <div class="result-formula expected-grant-formula">Enter target amount to calculate</div>
+                <div class="col-md-6">
+                    <div class="expected-grant-display" style="padding: 20px; background: #e8f5e9; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 14px; color: #666;">Expected Grant Amount (<span class="grant-currency-label">GBP</span>)</div>
+                        <div class="expected-grant-value" style="font-size: 32px; font-weight: bold; color: #2e7d32; margin-top: 10px;">-</div>
+                        <div class="expected-grant-formula text-muted" style="font-size: 12px; margin-top: 5px;"></div>
                     </div>
                 </div>
             </div>
@@ -193,519 +125,120 @@
 </div>
 
 <style>
-/* ============================================
-   Frappe UI Inspired Design System
-   ============================================ */
-
-/* CSS Variables */
-.prudency-calculator-container {
-    --surface-white: #ffffff;
-    --surface-gray-1: #f9fafb;
-    --surface-gray-2: #f3f4f6;
-    --surface-gray-3: #e5e7eb;
-    --surface-gray-4: #d1d5db;
-    --surface-blue-1: #eff6ff;
-    --surface-blue-2: #dbeafe;
-    --surface-green-1: #ecfdf5;
-    --surface-green-2: #d1fae5;
-    --surface-amber-1: #fffbeb;
-    --surface-amber-2: #fef3c7;
-    
-    --text-primary: #111827;
-    --text-secondary: #4b5563;
-    --text-muted: #9ca3af;
-    --text-white: #ffffff;
-    
-    --border-color: #e5e7eb;
-    --border-color-light: #f3f4f6;
-    
-    --blue-500: #3b82f6;
-    --blue-600: #2563eb;
-    --blue-700: #1d4ed8;
-    --green-500: #22c55e;
-    --green-600: #16a34a;
-    --green-700: #15803d;
-    --amber-500: #f59e0b;
-    --amber-600: #d97706;
-    --red-500: #ef4444;
-    --orange-500: #f97316;
-    
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-    
-    --radius-sm: 6px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
-    
-    --transition-fast: 150ms ease;
-    --transition-normal: 200ms ease;
-}
-
-/* Container */
 .prudency-calculator-container {
     max-width: 900px;
     margin: 0 auto;
-    padding: 24px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    padding: 20px;
 }
 
-/* Page Header */
 .prudency-calculator-container .page-header {
-    margin-bottom: 32px;
+    margin-bottom: 30px;
 }
 
-.prudency-calculator-container .header-content {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
+.prudency-calculator-container .frappe-card {
+    border: 1px solid #d1d8dd;
+    border-radius: 8px;
+    background: #fff;
 }
 
-.prudency-calculator-container .header-icon {
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, var(--blue-500), var(--blue-700));
-    border-radius: var(--radius-lg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-white);
-    flex-shrink: 0;
-    box-shadow: var(--shadow-md);
+.prudency-calculator-container .card-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #d1d8dd;
+    background: #f7f7f7;
+    border-radius: 8px 8px 0 0;
 }
 
-.prudency-calculator-container .header-text h1 {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0 0 4px 0;
-    letter-spacing: -0.025em;
-}
-
-.prudency-calculator-container .header-text p {
-    font-size: 14px;
-    color: var(--text-secondary);
+.prudency-calculator-container .card-header h5 {
     margin: 0;
-    line-height: 1.5;
-}
-
-/* Cards */
-.prudency-calculator-container .card {
-    background: var(--surface-white);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 20px;
-    overflow: hidden;
-    transition: box-shadow var(--transition-normal);
-}
-
-.prudency-calculator-container .card:hover {
-    box-shadow: var(--shadow-md);
-}
-
-.prudency-calculator-container .card-title {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
-    color: var(--text-primary);
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border-color-light);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--surface-white);
 }
 
-.prudency-calculator-container .card-title-icon {
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-}
-
-.prudency-calculator-container .card-content {
+.prudency-calculator-container .card-body {
     padding: 20px;
 }
 
-/* Currency Selection Grid */
-.prudency-calculator-container .currency-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr auto;
-    gap: 16px;
-    align-items: end;
+.prudency-calculator-container .rates-table {
+    margin-bottom: 0;
 }
 
-.prudency-calculator-container .btn-wrapper {
-    padding-bottom: 2px;
+.prudency-calculator-container .rates-table th,
+.prudency-calculator-container .rates-table td {
+    padding: 10px 15px;
 }
 
-/* Pair Badge */
-.prudency-calculator-container .pair-badge {
-    margin-left: auto;
-    background: var(--surface-blue-1);
-    color: var(--blue-600);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-/* Alert Box */
-.prudency-calculator-container .alert-box {
-    display: flex;
-    gap: 12px;
-    padding: 16px;
-    border-radius: var(--radius-md);
-    margin-bottom: 16px;
-}
-
-.prudency-calculator-container .alert-warning {
-    background: var(--surface-amber-1);
-    border: 1px solid var(--surface-amber-2);
-}
-
-.prudency-calculator-container .alert-icon {
-    color: var(--amber-500);
-    flex-shrink: 0;
-}
-
-.prudency-calculator-container .alert-content strong {
-    display: block;
-    color: var(--amber-600);
-    font-size: 14px;
-    margin-bottom: 4px;
-}
-
-.prudency-calculator-container .alert-content p {
-    margin: 0;
-    font-size: 13px;
-    color: var(--text-secondary);
-}
-
-.prudency-calculator-container .alert-hint {
-    color: var(--text-muted) !important;
-    font-size: 12px !important;
-    margin-top: 8px !important;
-}
-
-/* Data Table */
-.prudency-calculator-container .data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-}
-
-.prudency-calculator-container .data-table th {
-    text-align: left;
-    padding: 12px 16px;
-    font-weight: 500;
-    color: var(--text-muted);
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 1px solid var(--border-color);
-    background: var(--surface-gray-1);
-}
-
-.prudency-calculator-container .data-table td {
-    padding: 12px 16px;
-    color: var(--text-primary);
-    border-bottom: 1px solid var(--border-color-light);
-}
-
-.prudency-calculator-container .data-table tbody tr {
-    transition: background-color var(--transition-fast);
-}
-
-.prudency-calculator-container .data-table tbody tr:hover {
-    background: var(--surface-gray-1);
-}
-
-.prudency-calculator-container .data-table tbody tr:nth-child(even) {
-    background: var(--surface-gray-1);
-}
-
-.prudency-calculator-container .data-table tbody tr:nth-child(even):hover {
-    background: var(--surface-gray-2);
-}
-
-.prudency-calculator-container .data-table .text-right {
-    text-align: right;
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-    font-weight: 500;
-}
-
-/* Summary Row */
-.prudency-calculator-container .summary-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 16px;
-    padding: 16px;
-    background: linear-gradient(135deg, var(--surface-blue-1), var(--surface-blue-2));
-    border-radius: var(--radius-md);
-    border: 1px solid var(--surface-blue-2);
-}
-
-.prudency-calculator-container .summary-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--blue-700);
-}
-
-.prudency-calculator-container .summary-value {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--blue-700);
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-}
-
-/* Mode Toggle - Button Style */
-.prudency-calculator-container .mode-toggle-section {
-    margin-bottom: 24px;
-    text-align: center;
-}
-
-.prudency-calculator-container .mode-toggle-wrapper {
-    display: inline-flex;
-    background: var(--surface-gray-2);
-    border-radius: var(--radius-md);
-    padding: 4px;
-    gap: 4px;
-}
-
-.prudency-calculator-container .mode-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 14px;
-    font-weight: 500;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-normal);
-}
-
-.prudency-calculator-container .mode-btn:hover {
-    color: var(--text-primary);
-}
-
-.prudency-calculator-container .mode-btn.active {
-    background: var(--surface-white);
-    color: var(--text-primary);
-    box-shadow: var(--shadow-sm);
-}
-
-.prudency-calculator-container .mode-btn-proposal.active {
-    color: var(--blue-600);
-}
-
-.prudency-calculator-container .mode-btn-expense.active {
-    color: var(--orange-500);
-}
-
-.prudency-calculator-container .mode-btn-icon {
-    display: flex;
-    align-items: center;
-}
-
-.prudency-calculator-container .mode-description {
-    margin-top: 12px;
-    font-size: 13px;
-    color: var(--text-muted);
-}
-
-/* Calculation Grid */
-.prudency-calculator-container .calc-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-.prudency-calculator-container .factor-card,
-.prudency-calculator-container .rate-card {
-    padding: 20px;
-    border-radius: var(--radius-md);
-    text-align: center;
-}
-
-.prudency-calculator-container .factor-card {
-    background: var(--surface-gray-1);
-    border: 1px solid var(--border-color);
-}
-
-.prudency-calculator-container .rate-card {
-    background: linear-gradient(135deg, var(--surface-blue-1), var(--surface-white));
-    border: 1px solid var(--surface-blue-2);
-}
-
-.prudency-calculator-container .factor-label,
-.prudency-calculator-container .rate-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 8px;
-}
-
-.prudency-calculator-container .factor-value {
-    font-size: 36px;
-    font-weight: 700;
-    color: var(--text-primary);
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-    line-height: 1.2;
-}
-
-.prudency-calculator-container .rate-value {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--blue-600);
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-    line-height: 1.2;
-}
-
-.prudency-calculator-container .factor-badge {
-    display: inline-block;
-    margin-top: 12px;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.prudency-calculator-container .factor-badge-proposal {
-    background: var(--surface-blue-1);
-    color: var(--blue-600);
-}
-
-.prudency-calculator-container .factor-badge-expense {
-    background: #fff7ed;
-    color: var(--orange-500);
-}
-
-.prudency-calculator-container .rate-formula {
-    margin-top: 8px;
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-/* Result Section */
-.prudency-calculator-container .result-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    align-items: center;
-}
-
-.prudency-calculator-container .input-section {
-    padding-right: 24px;
-    border-right: 1px solid var(--border-color-light);
-}
-
-.prudency-calculator-container .result-box {
-    background: linear-gradient(135deg, var(--surface-green-1), var(--surface-green-2));
-    border: 1px solid var(--surface-green-2);
-    border-radius: var(--radius-lg);
-    padding: 24px;
-    text-align: center;
-    box-shadow: var(--shadow-sm);
-}
-
-.prudency-calculator-container .result-label {
-    font-size: 13px;
-    color: var(--green-700);
-    font-weight: 500;
-    margin-bottom: 8px;
-}
-
-.prudency-calculator-container .result-value {
-    font-size: 32px;
-    font-weight: 700;
-    color: var(--green-700);
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-    line-height: 1.2;
-}
-
-.prudency-calculator-container .result-formula {
-    margin-top: 8px;
-    font-size: 12px;
-    color: var(--green-600);
-    opacity: 0.8;
-}
-
-/* Disabled State */
 .prudency-calculator-container .disabled-state {
     opacity: 0.5;
     pointer-events: none;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .prudency-calculator-container {
-        padding: 16px;
-    }
-    
-    .prudency-calculator-container .currency-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .prudency-calculator-container .calc-grid,
-    .prudency-calculator-container .result-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .prudency-calculator-container .input-section {
-        padding-right: 0;
-        border-right: none;
-        padding-bottom: 20px;
-        border-bottom: 1px solid var(--border-color-light);
-    }
-    
-    .prudency-calculator-container .mode-toggle-wrapper {
-        flex-direction: column;
-        width: 100%;
-    }
-    
-    .prudency-calculator-container .mode-btn {
-        justify-content: center;
-    }
+/* Mode Toggle Styles */
+.prudency-calculator-container .mode-toggle-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
 }
 
-/* Override Frappe default styles */
-.prudency-calculator-container .frappe-control {
-    margin-bottom: 0 !important;
+.prudency-calculator-container .mode-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #8d99a6;
+    transition: color 0.3s ease;
 }
 
-.prudency-calculator-container .form-control {
-    border-radius: var(--radius-sm) !important;
-    border-color: var(--border-color) !important;
-    transition: border-color var(--transition-fast), box-shadow var(--transition-fast) !important;
+.prudency-calculator-container .mode-label.active {
+    color: #171717;
+    font-weight: 600;
 }
 
-.prudency-calculator-container .form-control:focus {
-    border-color: var(--blue-500) !important;
-    box-shadow: 0 0 0 3px var(--surface-blue-1) !important;
+.prudency-calculator-container .mode-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+    margin: 0;
 }
 
-.prudency-calculator-container .btn-primary {
-    background: var(--blue-500) !important;
-    border-color: var(--blue-500) !important;
-    border-radius: var(--radius-sm) !important;
-    font-weight: 500 !important;
-    transition: all var(--transition-fast) !important;
+.prudency-calculator-container .mode-toggle-input {
+    opacity: 0;
+    width: 0;
+    height: 0;
 }
 
-.prudency-calculator-container .btn-primary:hover {
-    background: var(--blue-600) !important;
-    border-color: var(--blue-600) !important;
+.prudency-calculator-container .mode-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #5e64ff;
+    transition: 0.3s;
+    border-radius: 30px;
+}
+
+.prudency-calculator-container .mode-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.prudency-calculator-container .mode-toggle-input:checked + .mode-toggle-slider {
+    background-color: #ff5858;
+}
+
+.prudency-calculator-container .mode-toggle-input:checked + .mode-toggle-slider:before {
+    transform: translateX(30px);
+}
+
+.prudency-calculator-container .mode-description {
+    text-align: center;
 }
 </style>
