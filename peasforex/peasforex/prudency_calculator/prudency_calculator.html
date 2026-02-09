@@ -1,0 +1,156 @@
+<div class="prudency-calculator-container">
+    <!-- Header -->
+    <div class="page-header">
+        <h2>PEAS Prudency Calculator</h2>
+        <p class="text-muted">Calculate expected grant amounts using a 6-month rolling average with prudency factor</p>
+    </div>
+
+    <!-- Currency Selection Section -->
+    <div class="frappe-card currency-selection-section">
+        <div class="card-header">
+            <h5>Currency Selection</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="grant-currency-field"></div>
+                </div>
+                <div class="col-md-4">
+                    <div class="local-currency-field"></div>
+                </div>
+                <div class="col-md-4">
+                    <div class="load-rates-btn" style="margin-top: 25px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rates Table Section -->
+    <div class="frappe-card rates-section" style="margin-top: 20px;">
+        <div class="card-header">
+            <h5>Monthly Average Exchange Rates (<span class="pair-label">GBP → UGX</span>)</h5>
+        </div>
+        <div class="card-body">
+            <!-- Warning message (hidden by default) -->
+            <div class="insufficient-data-warning" style="display: none;">
+                <div class="alert alert-warning">
+                    <strong>Insufficient Data</strong>
+                    <p class="warning-message"></p>
+                    <p class="text-muted">Please run a backfill or wait for more monthly syncs.</p>
+                </div>
+            </div>
+            
+            <!-- Rates table -->
+            <div class="rates-table-container">
+                <table class="table table-bordered rates-table">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th style="text-align: right;">Exchange Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody class="rates-table-body">
+                        <!-- Rows populated by JS -->
+                    </tbody>
+                </table>
+                
+                <div class="grand-average-row" style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                    <strong>Grand Average (6 months):</strong>
+                    <span class="grand-average-value" style="float: right; font-weight: bold;">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculation Section -->
+    <div class="frappe-card calculation-section" style="margin-top: 20px;">
+        <div class="card-header">
+            <h5>Prudency Calculation</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="prudency-factor-field"></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="prudency-rate-display" style="margin-top: 25px;">
+                        <strong>Prudency Rate:</strong>
+                        <span class="prudency-rate-value" style="float: right; font-size: 18px; font-weight: bold;">-</span>
+                        <br>
+                        <span class="prudency-rate-formula text-muted" style="font-size: 12px;"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Section -->
+    <div class="frappe-card result-section" style="margin-top: 20px;">
+        <div class="card-header">
+            <h5>Grant Amount Calculation</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="target-amount-field"></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="expected-grant-display" style="padding: 20px; background: #e8f5e9; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 14px; color: #666;">Expected Grant Amount (<span class="grant-currency-label">GBP</span>)</div>
+                        <div class="expected-grant-value" style="font-size: 32px; font-weight: bold; color: #2e7d32; margin-top: 10px;">-</div>
+                        <div class="expected-grant-formula text-muted" style="font-size: 12px; margin-top: 5px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.prudency-calculator-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.prudency-calculator-container .page-header {
+    margin-bottom: 30px;
+}
+
+.prudency-calculator-container .frappe-card {
+    border: 1px solid #d1d8dd;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.prudency-calculator-container .card-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #d1d8dd;
+    background: #f7f7f7;
+    border-radius: 8px 8px 0 0;
+}
+
+.prudency-calculator-container .card-header h5 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.prudency-calculator-container .card-body {
+    padding: 20px;
+}
+
+.prudency-calculator-container .rates-table {
+    margin-bottom: 0;
+}
+
+.prudency-calculator-container .rates-table th,
+.prudency-calculator-container .rates-table td {
+    padding: 10px 15px;
+}
+
+.prudency-calculator-container .disabled-state {
+    opacity: 0.5;
+    pointer-events: none;
+}
+</style>
