@@ -94,17 +94,37 @@
    "onboard": 0,
    "type": "Card Break"
   },
-  {
-   "hidden": 0,
-   "is_query_report": 1,
-   "label": "Exchange Rate History",
-   "link_count": 0,
-   "link_to": "Exchange Rate History",
-   "link_type": "Report",
-   "onboard": 0,
-   "type": "Link"
-  }
- ],
+   {
+    "hidden": 0,
+    "is_query_report": 1,
+    "label": "Exchange Rate History",
+    "link_count": 0,
+    "link_to": "Exchange Rate History",
+    "link_type": "Report",
+    "onboard": 0,
+    "type": "Link"
+   },
+   {
+    "hidden": 0,
+    "is_query_report": 0,
+    "label": "Tools",
+    "link_count": 0,
+    "link_to": "",
+    "link_type": "DocType",
+    "onboard": 0,
+    "type": "Card Break"
+   },
+   {
+    "hidden": 0,
+    "is_query_report": 0,
+    "label": "Prudency Calculator",
+    "link_count": 0,
+    "link_to": "prudency-calculator",
+    "link_type": "Page",
+    "onboard": 0,
+    "type": "Link"
+   }
+  ],
  "modified": "2026-01-14 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Peasforex",
@@ -168,13 +188,20 @@
    "link_to": "Exchange Rate History",
    "type": "Report"
   },
-  {
-   "color": "Orange",
-   "doc_view": "List",
-   "label": "Currency Exchange",
-   "link_to": "Currency Exchange",
-   "type": "DocType"
-  }
- ],
+   {
+    "color": "Orange",
+    "doc_view": "List",
+    "label": "Currency Exchange",
+    "link_to": "Currency Exchange",
+    "type": "DocType"
+   },
+   {
+    "color": "Purple",
+    "doc_view": "",
+    "label": "Prudency Calculator",
+    "link_to": "prudency-calculator",
+    "type": "Page"
+   }
+  ],
  "title": "Forex Integration"
 }
