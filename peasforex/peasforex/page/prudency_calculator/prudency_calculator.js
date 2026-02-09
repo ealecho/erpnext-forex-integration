@@ -19,13 +19,18 @@ class PrudencyCalculator {
         
         // State
         this.state = {
+            mode: 'proposal', // 'proposal' or 'expense'
             grant_currency: 'GBP',
             local_currency: 'UGX',
             months: [],
             grand_average: null,
             has_sufficient_data: false,
-            prudency_factor: 0.95,
-            target_amount: 0
+            // Proposal mode state
+            proposal_prudency_factor: 0.95,
+            proposal_target_amount: 0,
+            // Expense planning mode state
+            expense_prudency_factor: 1.05,
+            expense_grant_amount: 0
         };
         
         this.init();
@@ -38,8 +43,45 @@ class PrudencyCalculator {
         // Setup fields
         this.setup_fields();
         
+        // Setup tab switching
+        this.setup_tabs();
+        
         // Load initial data
         this.load_rates();
+    }
+    
+    setup_tabs() {
+        const me = this;
+        
+        this.wrapper.find('.tab-btn').on('click', function() {
+            const mode = $(this).data('mode');
+            me.switch_mode(mode);
+        });
+    }
+    
+    switch_mode(mode) {
+        this.state.mode = mode;
+        
+        // Update tab buttons
+        this.wrapper.find('.tab-btn').removeClass('active');
+        this.wrapper.find(`.tab-btn[data-mode="${mode}"]`).addClass('active');
+        
+        // Show/hide content sections
+        if (mode === 'proposal') {
+            this.wrapper.find('.proposal-mode-content').show();
+            this.wrapper.find('.expense-mode-content').hide();
+            // Reset to default prudency factor
+            this.state.proposal_prudency_factor = 0.95;
+            this.proposal_prudency_factor_field.set_value(0.95);
+            this.recalculate_proposal();
+        } else {
+            this.wrapper.find('.proposal-mode-content').hide();
+            this.wrapper.find('.expense-mode-content').show();
+            // Reset to default prudency factor
+            this.state.expense_prudency_factor = 1.05;
+            this.expense_prudency_factor_field.set_value(1.05);
+            this.recalculate_expense();
+        }
     }
     
     setup_fields() {
@@ -93,40 +135,79 @@ class PrudencyCalculator {
             render_input: true
         });
         
-        // Prudency Factor field
-        this.prudency_factor_field = frappe.ui.form.make_control({
+        // === PROPOSAL MODE FIELDS ===
+        
+        // Proposal Prudency Factor field
+        this.proposal_prudency_factor_field = frappe.ui.form.make_control({
             df: {
                 fieldtype: 'Float',
-                fieldname: 'prudency_factor',
+                fieldname: 'proposal_prudency_factor',
                 label: 'Prudency Factor',
                 default: 0.95,
                 precision: 2,
                 change: function() {
-                    me.state.prudency_factor = parseFloat(this.get_value()) || 0.95;
-                    me.recalculate();
+                    me.state.proposal_prudency_factor = parseFloat(this.get_value()) || 0.95;
+                    me.recalculate_proposal();
                 }
             },
-            parent: this.wrapper.find('.prudency-factor-field'),
+            parent: this.wrapper.find('.proposal-prudency-factor-field'),
             render_input: true
         });
-        this.prudency_factor_field.set_value(0.95);
+        this.proposal_prudency_factor_field.set_value(0.95);
         
-        // Target Amount field
-        this.target_amount_field = frappe.ui.form.make_control({
+        // Proposal Target Amount field
+        this.proposal_target_amount_field = frappe.ui.form.make_control({
             df: {
                 fieldtype: 'Float',
-                fieldname: 'target_amount',
+                fieldname: 'proposal_target_amount',
                 label: 'Target Local Currency Amount',
                 precision: 2,
                 change: function() {
-                    me.state.target_amount = parseFloat(this.get_value()) || 0;
-                    me.recalculate();
+                    me.state.proposal_target_amount = parseFloat(this.get_value()) || 0;
+                    me.recalculate_proposal();
                 }
             },
-            parent: this.wrapper.find('.target-amount-field'),
+            parent: this.wrapper.find('.proposal-target-amount-field'),
             render_input: true
         });
-        this.target_amount_field.set_value(0);
+        this.proposal_target_amount_field.set_value(0);
+        
+        // === EXPENSE PLANNING MODE FIELDS ===
+        
+        // Expense Prudency Factor field
+        this.expense_prudency_factor_field = frappe.ui.form.make_control({
+            df: {
+                fieldtype: 'Float',
+                fieldname: 'expense_prudency_factor',
+                label: 'Prudency Factor',
+                default: 1.05,
+                precision: 2,
+                change: function() {
+                    me.state.expense_prudency_factor = parseFloat(this.get_value()) || 1.05;
+                    me.recalculate_expense();
+                }
+            },
+            parent: this.wrapper.find('.expense-prudency-factor-field'),
+            render_input: true
+        });
+        this.expense_prudency_factor_field.set_value(1.05);
+        
+        // Expense Grant Amount field
+        this.expense_grant_amount_field = frappe.ui.form.make_control({
+            df: {
+                fieldtype: 'Float',
+                fieldname: 'expense_grant_amount',
+                label: 'Grant Amount',
+                precision: 2,
+                change: function() {
+                    me.state.expense_grant_amount = parseFloat(this.get_value()) || 0;
+                    me.recalculate_expense();
+                }
+            },
+            parent: this.wrapper.find('.expense-grant-amount-field'),
+            render_input: true
+        });
+        this.expense_grant_amount_field.set_value(0);
     }
     
     // Format number with commas and 2 decimal places
@@ -147,9 +228,10 @@ class PrudencyCalculator {
             return;
         }
         
-        // Update pair label
+        // Update pair label and currency labels
         this.wrapper.find('.pair-label').text(`${grant_currency} → ${local_currency}`);
         this.wrapper.find('.grant-currency-label').text(grant_currency);
+        this.wrapper.find('.local-currency-label').text(local_currency);
         
         frappe.call({
             method: 'peasforex.peasforex.page.prudency_calculator.prudency_calculator.get_monthly_averages',
@@ -211,19 +293,21 @@ class PrudencyCalculator {
     update_ui_state() {
         const warning_div = this.wrapper.find('.insufficient-data-warning');
         const rates_table = this.wrapper.find('.rates-table-container');
-        const calc_section = this.wrapper.find('.calculation-section');
-        const result_section = this.wrapper.find('.result-section');
+        const calc_sections = this.wrapper.find('.calculation-section');
+        const result_sections = this.wrapper.find('.result-section');
         
         if (this.state.has_sufficient_data) {
             // Hide warning, enable calculations
             warning_div.hide();
             rates_table.show();
-            calc_section.removeClass('disabled-state');
-            result_section.removeClass('disabled-state');
+            calc_sections.removeClass('disabled-state');
+            result_sections.removeClass('disabled-state');
             
             // Enable input fields
-            this.prudency_factor_field.$input.prop('disabled', false);
-            this.target_amount_field.$input.prop('disabled', false);
+            this.proposal_prudency_factor_field.$input.prop('disabled', false);
+            this.proposal_target_amount_field.$input.prop('disabled', false);
+            this.expense_prudency_factor_field.$input.prop('disabled', false);
+            this.expense_grant_amount_field.$input.prop('disabled', false);
         } else {
             // Show warning, disable calculations
             warning_div.show();
@@ -238,49 +322,102 @@ class PrudencyCalculator {
                 rates_table.hide();
             }
             
-            calc_section.addClass('disabled-state');
-            result_section.addClass('disabled-state');
+            calc_sections.addClass('disabled-state');
+            result_sections.addClass('disabled-state');
             
             // Disable input fields
-            this.prudency_factor_field.$input.prop('disabled', true);
-            this.target_amount_field.$input.prop('disabled', true);
+            this.proposal_prudency_factor_field.$input.prop('disabled', true);
+            this.proposal_target_amount_field.$input.prop('disabled', true);
+            this.expense_prudency_factor_field.$input.prop('disabled', true);
+            this.expense_grant_amount_field.$input.prop('disabled', true);
             
             // Clear results
-            this.wrapper.find('.prudency-rate-value').text('-');
-            this.wrapper.find('.prudency-rate-formula').text('');
-            this.wrapper.find('.expected-grant-value').text('-');
-            this.wrapper.find('.expected-grant-formula').text('');
+            this.clear_results();
         }
     }
     
+    clear_results() {
+        // Proposal mode
+        this.wrapper.find('.proposal-prudency-rate-value').text('-');
+        this.wrapper.find('.proposal-prudency-rate-formula').text('');
+        this.wrapper.find('.proposal-expected-value').text('-');
+        this.wrapper.find('.proposal-expected-formula').text('');
+        
+        // Expense mode
+        this.wrapper.find('.expense-prudency-rate-value').text('-');
+        this.wrapper.find('.expense-prudency-rate-formula').text('');
+        this.wrapper.find('.expense-expected-value').text('-');
+        this.wrapper.find('.expense-expected-formula').text('');
+    }
+    
     recalculate() {
+        // Recalculate based on current mode
+        if (this.state.mode === 'proposal') {
+            this.recalculate_proposal();
+        } else {
+            this.recalculate_expense();
+        }
+    }
+    
+    recalculate_proposal() {
         if (!this.state.has_sufficient_data) {
             return;
         }
         
         const grand_average = this.state.grand_average;
-        const prudency_factor = this.state.prudency_factor;
-        const target_amount = this.state.target_amount;
+        const prudency_factor = this.state.proposal_prudency_factor;
+        const target_amount = this.state.proposal_target_amount;
         
         // Calculate prudency rate
         const prudency_rate = grand_average * prudency_factor;
         
         // Update prudency rate display
-        this.wrapper.find('.prudency-rate-value').text(prudency_rate.toFixed(2));
-        this.wrapper.find('.prudency-rate-formula').text(
+        this.wrapper.find('.proposal-prudency-rate-value').text(prudency_rate.toFixed(2));
+        this.wrapper.find('.proposal-prudency-rate-formula').text(
             `(${grand_average.toFixed(2)} × ${prudency_factor})`
         );
         
-        // Calculate expected grant amount
+        // Calculate expected grant amount: Target Local / Prudency Rate
         if (target_amount > 0 && prudency_rate > 0) {
             const expected_grant = target_amount / prudency_rate;
-            this.wrapper.find('.expected-grant-value').text(this.formatNumber(expected_grant));
-            this.wrapper.find('.expected-grant-formula').text(
+            this.wrapper.find('.proposal-expected-value').text(this.formatNumber(expected_grant));
+            this.wrapper.find('.proposal-expected-formula').text(
                 `(${this.formatNumber(target_amount)} ÷ ${this.formatNumber(prudency_rate)})`
             );
         } else {
-            this.wrapper.find('.expected-grant-value').text('-');
-            this.wrapper.find('.expected-grant-formula').text('Enter target amount above');
+            this.wrapper.find('.proposal-expected-value').text('-');
+            this.wrapper.find('.proposal-expected-formula').text('Enter target amount above');
+        }
+    }
+    
+    recalculate_expense() {
+        if (!this.state.has_sufficient_data) {
+            return;
+        }
+        
+        const grand_average = this.state.grand_average;
+        const prudency_factor = this.state.expense_prudency_factor;
+        const grant_amount = this.state.expense_grant_amount;
+        
+        // Calculate prudency rate
+        const prudency_rate = grand_average * prudency_factor;
+        
+        // Update prudency rate display
+        this.wrapper.find('.expense-prudency-rate-value').text(prudency_rate.toFixed(2));
+        this.wrapper.find('.expense-prudency-rate-formula').text(
+            `(${grand_average.toFixed(2)} × ${prudency_factor})`
+        );
+        
+        // Calculate expected local amount: Grant Amount × Prudency Rate
+        if (grant_amount > 0 && prudency_rate > 0) {
+            const expected_local = grant_amount * prudency_rate;
+            this.wrapper.find('.expense-expected-value').text(this.formatNumber(expected_local));
+            this.wrapper.find('.expense-expected-formula').text(
+                `(${this.formatNumber(grant_amount)} × ${this.formatNumber(prudency_rate)})`
+            );
+        } else {
+            this.wrapper.find('.expense-expected-value').text('-');
+            this.wrapper.find('.expense-expected-formula').text('Enter grant amount above');
         }
     }
 }

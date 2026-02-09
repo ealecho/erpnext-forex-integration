@@ -62,43 +62,106 @@
         </div>
     </div>
 
-    <!-- Calculation Section -->
-    <div class="frappe-card calculation-section" style="margin-top: 20px;">
-        <div class="card-header">
-            <h5>Prudency Calculation</h5>
+    <!-- Mode Tabs -->
+    <div class="mode-tabs" style="margin-top: 20px;">
+        <div class="tab-buttons">
+            <button class="tab-btn active" data-mode="proposal">
+                <span class="tab-title">Proposal Mode</span>
+                <span class="tab-desc">Calculate grant request</span>
+            </button>
+            <button class="tab-btn" data-mode="expense">
+                <span class="tab-title">Expense Planning Mode</span>
+                <span class="tab-desc">Budget local expenses</span>
+            </button>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="prudency-factor-field"></div>
+    </div>
+
+    <!-- Proposal Mode Section -->
+    <div class="mode-content proposal-mode-content">
+        <!-- Calculation Section -->
+        <div class="frappe-card calculation-section" style="margin-top: 20px;">
+            <div class="card-header">
+                <h5>Prudency Calculation</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="proposal-prudency-factor-field"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="prudency-rate-display" style="margin-top: 25px;">
+                            <strong>Prudency Rate:</strong>
+                            <span class="proposal-prudency-rate-value" style="float: right; font-size: 18px; font-weight: bold;">-</span>
+                            <br>
+                            <span class="proposal-prudency-rate-formula text-muted" style="font-size: 12px;"></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="prudency-rate-display" style="margin-top: 25px;">
-                        <strong>Prudency Rate:</strong>
-                        <span class="prudency-rate-value" style="float: right; font-size: 18px; font-weight: bold;">-</span>
-                        <br>
-                        <span class="prudency-rate-formula text-muted" style="font-size: 12px;"></span>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div class="frappe-card result-section" style="margin-top: 20px;">
+            <div class="card-header">
+                <h5>Grant Amount Calculation</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="proposal-target-amount-field"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="expected-grant-display" style="padding: 20px; background: #F2F9FF; border: 1px solid #C8E6FF; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 14px; color: #525252;">Expected Grant Amount (<span class="grant-currency-label">GBP</span>)</div>
+                            <div class="proposal-expected-value" style="font-size: 32px; font-weight: bold; color: #0070CC; margin-top: 10px;">-</div>
+                            <div class="proposal-expected-formula text-muted" style="font-size: 12px; margin-top: 5px;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Result Section -->
-    <div class="frappe-card result-section" style="margin-top: 20px;">
-        <div class="card-header">
-            <h5>Grant Amount Calculation</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="target-amount-field"></div>
+    <!-- Expense Planning Mode Section -->
+    <div class="mode-content expense-mode-content" style="display: none;">
+        <!-- Calculation Section -->
+        <div class="frappe-card calculation-section" style="margin-top: 20px;">
+            <div class="card-header">
+                <h5>Prudency Calculation</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="expense-prudency-factor-field"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="prudency-rate-display" style="margin-top: 25px;">
+                            <strong>Prudency Rate:</strong>
+                            <span class="expense-prudency-rate-value" style="float: right; font-size: 18px; font-weight: bold;">-</span>
+                            <br>
+                            <span class="expense-prudency-rate-formula text-muted" style="font-size: 12px;"></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="expected-grant-display" style="padding: 20px; background: #F2F9FF; border: 1px solid #C8E6FF; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 14px; color: #525252;">Expected Grant Amount (<span class="grant-currency-label">GBP</span>)</div>
-                        <div class="expected-grant-value" style="font-size: 32px; font-weight: bold; color: #0070CC; margin-top: 10px;">-</div>
-                        <div class="expected-grant-formula text-muted" style="font-size: 12px; margin-top: 5px;"></div>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div class="frappe-card result-section" style="margin-top: 20px;">
+            <div class="card-header">
+                <h5>Local Amount Calculation</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="expense-grant-amount-field"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="expected-local-display" style="padding: 20px; background: #F2F9FF; border: 1px solid #C8E6FF; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 14px; color: #525252;">Expected Local Amount (<span class="local-currency-label">UGX</span>)</div>
+                            <div class="expense-expected-value" style="font-size: 32px; font-weight: bold; color: #0070CC; margin-top: 10px;">-</div>
+                            <div class="expense-expected-formula text-muted" style="font-size: 12px; margin-top: 5px;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -153,5 +216,60 @@
 .prudency-calculator-container .disabled-state {
     opacity: 0.5;
     pointer-events: none;
+}
+
+/* Tab Styles */
+.mode-tabs {
+    margin-bottom: 0;
+}
+
+.mode-tabs .tab-buttons {
+    display: flex;
+    gap: 0;
+    background: #F3F3F3;
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.mode-tabs .tab-btn {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.mode-tabs .tab-btn:hover {
+    background: #E8E8E8;
+}
+
+.mode-tabs .tab-btn.active {
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.mode-tabs .tab-btn .tab-title {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #525252;
+}
+
+.mode-tabs .tab-btn.active .tab-title {
+    color: #171717;
+}
+
+.mode-tabs .tab-btn .tab-desc {
+    display: block;
+    font-size: 12px;
+    color: #8D8D8D;
+    margin-top: 2px;
+}
+
+.mode-tabs .tab-btn.active .tab-desc {
+    color: #525252;
 }
 </style>
