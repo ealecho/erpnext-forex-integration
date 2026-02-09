@@ -68,9 +68,27 @@
             <h5>Prudency Calculation</h5>
         </div>
         <div class="card-body">
+            <!-- Mode Toggle -->
+            <div class="mode-toggle-section" style="margin-bottom: 25px;">
+                <div class="mode-toggle-container">
+                    <span class="mode-label mode-label-proposal active">Proposal</span>
+                    <label class="mode-toggle-switch">
+                        <input type="checkbox" class="mode-toggle-input">
+                        <span class="mode-toggle-slider"></span>
+                    </label>
+                    <span class="mode-label mode-label-expense">Expense Planning</span>
+                </div>
+                <div class="mode-description text-muted" style="margin-top: 8px; font-size: 12px;">
+                    <span class="mode-description-text">Conservative estimate for grant proposals (factor: 0.95)</span>
+                </div>
+            </div>
+            
             <div class="row">
                 <div class="col-md-6">
-                    <div class="prudency-factor-field"></div>
+                    <div class="prudency-factor-display">
+                        <label class="control-label">Prudency Factor</label>
+                        <div class="prudency-factor-value-display" style="font-size: 24px; font-weight: bold; padding: 10px 0;">0.95</div>
+                    </div>
                 </div>
                 <div class="col-md-6">
                     <div class="prudency-rate-display" style="margin-top: 25px;">
@@ -152,5 +170,75 @@
 .prudency-calculator-container .disabled-state {
     opacity: 0.5;
     pointer-events: none;
+}
+
+/* Mode Toggle Styles */
+.prudency-calculator-container .mode-toggle-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.prudency-calculator-container .mode-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #8d99a6;
+    transition: color 0.3s ease;
+}
+
+.prudency-calculator-container .mode-label.active {
+    color: #171717;
+    font-weight: 600;
+}
+
+.prudency-calculator-container .mode-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+    margin: 0;
+}
+
+.prudency-calculator-container .mode-toggle-input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.prudency-calculator-container .mode-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #5e64ff;
+    transition: 0.3s;
+    border-radius: 30px;
+}
+
+.prudency-calculator-container .mode-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.prudency-calculator-container .mode-toggle-input:checked + .mode-toggle-slider {
+    background-color: #ff5858;
+}
+
+.prudency-calculator-container .mode-toggle-input:checked + .mode-toggle-slider:before {
+    transform: translateX(30px);
+}
+
+.prudency-calculator-container .mode-description {
+    text-align: center;
 }
 </style>
