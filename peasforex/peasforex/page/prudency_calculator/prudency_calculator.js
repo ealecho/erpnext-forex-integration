@@ -24,7 +24,6 @@ class PrudencyCalculator {
             months: [],
             grand_average: null,
             has_sufficient_data: false,
-            mode: 'proposal',  // 'proposal' or 'expense_planning'
             prudency_factor: 0.95,
             target_amount: 0
         };
@@ -94,8 +93,23 @@ class PrudencyCalculator {
             render_input: true
         });
         
-        // Mode Toggle setup
-        this.setup_mode_toggle();
+        // Prudency Factor field
+        this.prudency_factor_field = frappe.ui.form.make_control({
+            df: {
+                fieldtype: 'Float',
+                fieldname: 'prudency_factor',
+                label: 'Prudency Factor',
+                default: 0.95,
+                precision: 2,
+                change: function() {
+                    me.state.prudency_factor = parseFloat(this.get_value()) || 0.95;
+                    me.recalculate();
+                }
+            },
+            parent: this.wrapper.find('.prudency-factor-field'),
+            render_input: true
+        });
+        this.prudency_factor_field.set_value(0.95);
         
         // Target Amount field
         this.target_amount_field = frappe.ui.form.make_control({
@@ -115,49 +129,9 @@ class PrudencyCalculator {
         this.target_amount_field.set_value(0);
     }
     
-    setup_mode_toggle() {
-        const me = this;
-        const toggle_input = this.wrapper.find('.mode-toggle-input');
-        
-        // Handle toggle change
-        toggle_input.on('change', function() {
-            const is_expense_mode = $(this).is(':checked');
-            
-            if (is_expense_mode) {
-                me.state.mode = 'expense_planning';
-                me.state.prudency_factor = 1.05;
-            } else {
-                me.state.mode = 'proposal';
-                me.state.prudency_factor = 0.95;
-            }
-            
-            me.update_mode_ui();
-            me.recalculate();
-        });
-        
-        // Initialize UI
-        this.update_mode_ui();
-    }
-    
-    update_mode_ui() {
-        const is_expense_mode = this.state.mode === 'expense_planning';
-        
-        // Update toggle label styling
-        const proposal_label = this.wrapper.find('.mode-label-proposal');
-        const expense_label = this.wrapper.find('.mode-label-expense');
-        
-        if (is_expense_mode) {
-            proposal_label.removeClass('active');
-            expense_label.addClass('active');
-            this.wrapper.find('.mode-description-text').text('Buffer for expense planning (factor: 1.05)');
-        } else {
-            proposal_label.addClass('active');
-            expense_label.removeClass('active');
-            this.wrapper.find('.mode-description-text').text('Conservative estimate for grant proposals (factor: 0.95)');
-        }
-        
-        // Update prudency factor display
-        this.wrapper.find('.prudency-factor-value-display').text(this.state.prudency_factor.toFixed(2));
+    // Format number with commas and 2 decimal places
+    formatNumber(num) {
+        return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
     
     load_rates() {
@@ -248,7 +222,7 @@ class PrudencyCalculator {
             result_section.removeClass('disabled-state');
             
             // Enable input fields
-            this.wrapper.find('.mode-toggle-input').prop('disabled', false);
+            this.prudency_factor_field.$input.prop('disabled', false);
             this.target_amount_field.$input.prop('disabled', false);
         } else {
             // Show warning, disable calculations
@@ -268,7 +242,7 @@ class PrudencyCalculator {
             result_section.addClass('disabled-state');
             
             // Disable input fields
-            this.wrapper.find('.mode-toggle-input').prop('disabled', true);
+            this.prudency_factor_field.$input.prop('disabled', true);
             this.target_amount_field.$input.prop('disabled', true);
             
             // Clear results
@@ -300,9 +274,9 @@ class PrudencyCalculator {
         // Calculate expected grant amount
         if (target_amount > 0 && prudency_rate > 0) {
             const expected_grant = target_amount / prudency_rate;
-            this.wrapper.find('.expected-grant-value').text(expected_grant.toFixed(2));
+            this.wrapper.find('.expected-grant-value').text(this.formatNumber(expected_grant));
             this.wrapper.find('.expected-grant-formula').text(
-                `(${target_amount.toFixed(2)} ÷ ${prudency_rate.toFixed(2)})`
+                `(${this.formatNumber(target_amount)} ÷ ${this.formatNumber(prudency_rate)})`
             );
         } else {
             this.wrapper.find('.expected-grant-value').text('-');

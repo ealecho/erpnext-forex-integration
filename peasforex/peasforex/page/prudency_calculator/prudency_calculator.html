@@ -54,7 +54,7 @@
                     </tbody>
                 </table>
                 
-                <div class="grand-average-row" style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                <div class="grand-average-row" style="margin-top: 15px; padding: 10px; background: #F3F3F3; border-radius: 8px;">
                     <strong>Grand Average (6 months):</strong>
                     <span class="grand-average-value" style="float: right; font-weight: bold;">-</span>
                 </div>
@@ -68,27 +68,9 @@
             <h5>Prudency Calculation</h5>
         </div>
         <div class="card-body">
-            <!-- Mode Toggle -->
-            <div class="mode-toggle-section" style="margin-bottom: 25px;">
-                <div class="mode-toggle-container">
-                    <span class="mode-label mode-label-proposal active">Proposal</span>
-                    <label class="mode-toggle-switch">
-                        <input type="checkbox" class="mode-toggle-input">
-                        <span class="mode-toggle-slider"></span>
-                    </label>
-                    <span class="mode-label mode-label-expense">Expense Planning</span>
-                </div>
-                <div class="mode-description text-muted" style="margin-top: 8px; font-size: 12px;">
-                    <span class="mode-description-text">Conservative estimate for grant proposals (factor: 0.95)</span>
-                </div>
-            </div>
-            
             <div class="row">
                 <div class="col-md-6">
-                    <div class="prudency-factor-display">
-                        <label class="control-label">Prudency Factor</label>
-                        <div class="prudency-factor-value-display" style="font-size: 24px; font-weight: bold; padding: 10px 0;">0.95</div>
-                    </div>
+                    <div class="prudency-factor-field"></div>
                 </div>
                 <div class="col-md-6">
                     <div class="prudency-rate-display" style="margin-top: 25px;">
@@ -113,9 +95,9 @@
                     <div class="target-amount-field"></div>
                 </div>
                 <div class="col-md-6">
-                    <div class="expected-grant-display" style="padding: 20px; background: #e8f5e9; border-radius: 8px; text-align: center;">
-                        <div style="font-size: 14px; color: #666;">Expected Grant Amount (<span class="grant-currency-label">GBP</span>)</div>
-                        <div class="expected-grant-value" style="font-size: 32px; font-weight: bold; color: #2e7d32; margin-top: 10px;">-</div>
+                    <div class="expected-grant-display" style="padding: 20px; background: #F2F9FF; border: 1px solid #C8E6FF; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 14px; color: #525252;">Expected Grant Amount (<span class="grant-currency-label">GBP</span>)</div>
+                        <div class="expected-grant-value" style="font-size: 32px; font-weight: bold; color: #0070CC; margin-top: 10px;">-</div>
                         <div class="expected-grant-formula text-muted" style="font-size: 12px; margin-top: 5px;"></div>
                     </div>
                 </div>
@@ -136,22 +118,23 @@
 }
 
 .prudency-calculator-container .frappe-card {
-    border: 1px solid #d1d8dd;
+    border: 1px solid #E2E2E2;
     border-radius: 8px;
     background: #fff;
 }
 
 .prudency-calculator-container .card-header {
     padding: 15px 20px;
-    border-bottom: 1px solid #d1d8dd;
-    background: #f7f7f7;
+    border-bottom: 1px solid #E2E2E2;
+    background: #F8F8F8;
     border-radius: 8px 8px 0 0;
 }
 
 .prudency-calculator-container .card-header h5 {
     margin: 0;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
+    color: #171717;
 }
 
 .prudency-calculator-container .card-body {
@@ -170,75 +153,5 @@
 .prudency-calculator-container .disabled-state {
     opacity: 0.5;
     pointer-events: none;
-}
-
-/* Mode Toggle Styles */
-.prudency-calculator-container .mode-toggle-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 15px;
-}
-
-.prudency-calculator-container .mode-label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #8d99a6;
-    transition: color 0.3s ease;
-}
-
-.prudency-calculator-container .mode-label.active {
-    color: #171717;
-    font-weight: 600;
-}
-
-.prudency-calculator-container .mode-toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 60px;
-    height: 30px;
-    margin: 0;
-}
-
-.prudency-calculator-container .mode-toggle-input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.prudency-calculator-container .mode-toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #5e64ff;
-    transition: 0.3s;
-    border-radius: 30px;
-}
-
-.prudency-calculator-container .mode-toggle-slider:before {
-    position: absolute;
-    content: "";
-    height: 22px;
-    width: 22px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: 0.3s;
-    border-radius: 50%;
-}
-
-.prudency-calculator-container .mode-toggle-input:checked + .mode-toggle-slider {
-    background-color: #ff5858;
-}
-
-.prudency-calculator-container .mode-toggle-input:checked + .mode-toggle-slider:before {
-    transform: translateX(30px);
-}
-
-.prudency-calculator-container .mode-description {
-    text-align: center;
 }
 </style>
