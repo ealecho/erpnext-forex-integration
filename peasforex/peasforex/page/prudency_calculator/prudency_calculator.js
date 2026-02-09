@@ -215,6 +215,17 @@ class PrudencyCalculator {
         return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
     
+    // Update input field labels with currency indicators
+    update_field_labels(grant_currency, local_currency) {
+        // Update Proposal Mode: Target Local Currency Amount field
+        this.proposal_target_amount_field.df.label = `Target Local Currency Amount (${local_currency})`;
+        this.proposal_target_amount_field.set_label(`Target Local Currency Amount (${local_currency})`);
+        
+        // Update Expense Planning Mode: Grant Amount field
+        this.expense_grant_amount_field.df.label = `Grant Amount (${grant_currency})`;
+        this.expense_grant_amount_field.set_label(`Grant Amount (${grant_currency})`);
+    }
+    
     load_rates() {
         const me = this;
         const grant_currency = this.grant_currency_field.get_value();
@@ -232,6 +243,9 @@ class PrudencyCalculator {
         this.wrapper.find('.pair-label').text(`${grant_currency} → ${local_currency}`);
         this.wrapper.find('.grant-currency-label').text(grant_currency);
         this.wrapper.find('.local-currency-label').text(local_currency);
+        
+        // Update input field labels with currency indicators
+        this.update_field_labels(grant_currency, local_currency);
         
         frappe.call({
             method: 'peasforex.peasforex.page.prudency_calculator.prudency_calculator.get_monthly_averages',
