@@ -26,27 +26,69 @@ def log_error(message, data=None):
 
 
 class ForexRateLog(Document):
+    def validate(self):
+        """Validate Central Bank Rate entries require company and appropriate source."""
+        if self.rate_type == "Central Bank Rate":
+            if not self.company:
+                frappe.throw(
+                    frappe._("Company is required for Central Bank Rate entries."),
+                    frappe.MandatoryError,
+                )
+
+            valid_cb_sources = [
+                "Bank of Uganda (BoU)",
+                "Bank of Zambia (BoZ)",
+                "Bank of Ghana (BoG)",
+                "Manual",
+            ]
+            if self.source and self.source not in valid_cb_sources:
+                frappe.throw(
+                    frappe._("Source for Central Bank Rate must be one of: {0}").format(
+                        ", ".join(valid_cb_sources)
+                    )
+                )
+        else:
+            # Non-Central Bank rates should not have a company set
+            if self.company:
+                self.company = None
+
     def before_insert(self):
         # Set synced_at if not set
         if not self.synced_at:
             self.synced_at = frappe.utils.now()
-    
+
     @staticmethod
-    def log_rate(from_currency, to_currency, rate_date, rate_type, exchange_rate,
-                 open_rate=None, high_rate=None, low_rate=None, close_rate=None,
-                 api_response=None):
+    def log_rate(
+        from_currency,
+        to_currency,
+        rate_date,
+        rate_type,
+        exchange_rate,
+        open_rate=None,
+        high_rate=None,
+        low_rate=None,
+        close_rate=None,
+        api_response=None,
+        source=None,
+        company=None,
+    ):
         """Create or update a forex rate log entry"""
-        log_debug(f"Logging rate: {from_currency}->{to_currency} | {rate_type} | {exchange_rate} on {rate_date}")
-        
+        log_debug(
+            f"Logging rate: {from_currency}->{to_currency} | {rate_type} | {exchange_rate} on {rate_date}"
+        )
+
         try:
             # Check if entry exists
-            existing = frappe.db.exists("Forex Rate Log", {
-                "from_currency": from_currency,
-                "to_currency": to_currency,
-                "rate_date": rate_date,
-                "rate_type": rate_type
-            })
-            
+            existing = frappe.db.exists(
+                "Forex Rate Log",
+                {
+                    "from_currency": from_currency,
+                    "to_currency": to_currency,
+                    "rate_date": rate_date,
+                    "rate_type": rate_type,
+                },
+            )
+
             if existing:
                 log_debug(f"Updating existing rate log: {existing}")
                 # Update existing
@@ -57,8 +99,16 @@ class ForexRateLog(Document):
                 doc.low_rate = low_rate
                 doc.close_rate = close_rate
                 doc.synced_at = frappe.utils.now()
+                if source:
+                    doc.source = source
+                if company:
+                    doc.company = company
                 if api_response:
-                    doc.api_response = json.dumps(api_response) if isinstance(api_response, dict) else api_response
+                    doc.api_response = (
+                        json.dumps(api_response)
+                        if isinstance(api_response, dict)
+                        else api_response
+                    )
                 doc.save(ignore_permissions=True)
                 log_debug(f"Rate log updated: {doc.name}")
                 return doc
@@ -76,18 +126,21 @@ class ForexRateLog(Document):
                     "high_rate": high_rate,
                     "low_rate": low_rate,
                     "close_rate": close_rate,
-                    "source": "Alpha Vantage",
+                    "source": source or "Alpha Vantage",
+                    "company": company,
                     "synced_at": frappe.utils.now(),
-                    "api_response": json.dumps(api_response) if isinstance(api_response, dict) else api_response
+                    "api_response": json.dumps(api_response)
+                    if isinstance(api_response, dict)
+                    else api_response,
                 }
-                
+
                 log_debug(f"Rate log data: {doc_data}")
-                
+
                 doc = frappe.get_doc(doc_data)
                 doc.insert(ignore_permissions=True)
                 log_debug(f"Rate log created: {doc.name}")
                 return doc
-                
+
         except Exception as e:
             log_error(f"Failed to log rate: {str(e)}")
             frappe.log_error(
@@ -96,6 +149,6 @@ class ForexRateLog(Document):
                 f"Type: {rate_type}, Rate: {exchange_rate}\n"
                 f"Error: {str(e)}\n\n"
                 f"{frappe.get_traceback()}",
-                "Forex Rate Log Error"
+                "Forex Rate Log Error",
             )
             return None
