@@ -3,7 +3,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import getdate, formatdate, get_last_day
+from frappe.utils import getdate, formatdate, get_last_day, add_months
 
 
 @frappe.whitelist()
@@ -49,11 +49,12 @@ def get_monthly_averages(grant_currency, local_currency, as_of_date=None):
             "error": _("Grant Currency and Local Currency must be different"),
         }
 
-    # Determine end date
+    # Determine end date — use the month BEFORE the selected month
+    # so "As of Jan 2026" fetches Jul-Dec 2025 (6 prior months)
     if as_of_date:
-        end_date = get_last_day(getdate(as_of_date))
+        end_date = get_last_day(add_months(getdate(as_of_date), -1))
     else:
-        end_date = get_last_day(getdate())
+        end_date = get_last_day(add_months(getdate(), -1))
 
     # Fetch the 6 most recent Monthly Average rates up to the selected date
     monthly_averages = frappe.db.sql(
