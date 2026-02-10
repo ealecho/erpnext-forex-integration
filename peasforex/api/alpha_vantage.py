@@ -536,7 +536,7 @@ class AlphaVantageClient:
         """
         Get various rate calculations for the previous month.
 
-        Returns closing rate, monthly average, and prudency rates.
+        Returns closing rate and monthly average.
 
         Args:
             from_currency: Source currency code
@@ -546,8 +546,8 @@ class AlphaVantageClient:
             dict: {
                 'closing_rate': float (last day of previous month),
                 'average_rate': float (average of all daily closes),
-                'high_rate': float (highest rate - prudency for expenses),
-                'low_rate': float (lowest rate - prudency for income),
+                'high_rate': float (highest rate in the month),
+                'low_rate': float (lowest rate in the month),
                 'month': str (YYYY-MM format),
                 'data_points': int (number of trading days used)
             }
@@ -653,8 +653,8 @@ class AlphaVantageClient:
         result = {
             "closing_rate": closing_rate,
             "average_rate": avg_rate,
-            "high_rate": high_rate,  # Prudency for expenses
-            "low_rate": low_rate,  # Prudency for income
+            "high_rate": high_rate,
+            "low_rate": low_rate,
             "month": last_of_prev_month.strftime("%Y-%m"),
             "month_end_date": last_of_prev_month.strftime("%Y-%m-%d"),
             "data_points": len(prev_month_rates),

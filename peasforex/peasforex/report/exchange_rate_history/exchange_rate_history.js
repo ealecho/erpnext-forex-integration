@@ -35,7 +35,7 @@ frappe.query_reports["Exchange Rate History"] = {
             "fieldname": "rate_type",
             "label": __("Rate Type"),
             "fieldtype": "Select",
-            "options": "\nSpot\nClosing\nMonthly Average\nPrudency (High)\nPrudency (Low)\nPEAS Internal Prudency",
+            "options": "\nSpot\nClosing\nMonthly Average\nPEAS Internal Prudency\nCentral Bank Rate",
             "reqd": 0
         }
     ],
@@ -168,9 +168,8 @@ frappe.query_reports["Exchange Rate History"] = {
                 "Spot": "#28a745",
                 "Closing": "#007bff",
                 "Monthly Average": "#6c757d",
-                "Prudency (High)": "#dc3545",
-                "Prudency (Low)": "#ffc107",
-                "PEAS Internal Prudency": "#9b59b6"
+                "PEAS Internal Prudency": "#9b59b6",
+                "Central Bank Rate": "#17a2b8"
             };
             let color = colors[data.rate_type] || "#333";
             value = `<span style="color: ${color}; font-weight: 500;">${data.rate_type}</span>`;

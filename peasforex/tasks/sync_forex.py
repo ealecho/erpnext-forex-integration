@@ -460,7 +460,7 @@ def sync_daily_spot_rates():
 
 def sync_monthly_rates():
     """
-    Sync monthly rates (Closing, Average, Prudency) for all enabled currency pairs.
+    Sync monthly rates (Closing, Average) for all enabled currency pairs.
 
     This is run on the 1st of each month to get rates for the previous month.
     """
@@ -590,50 +590,6 @@ def sync_monthly_rates():
                     status="Success",
                     exchange_rate=avg_rate,
                 )
-
-            # Sync Prudency Rates (High and Low)
-            if pair.get("sync_prudency_monthly"):
-                # Prudency High (for expenses - worst case is higher rate)
-                if result.get("high_rate"):
-                    high_rate = result.get("high_rate")
-                    log_debug(f"Prudency high rate: {high_rate}")
-
-                    if settings.store_historical_data:
-                        store_rate_log(
-                            from_currency=from_currency,
-                            to_currency=to_currency,
-                            rate_date=month_end_date,
-                            rate_type="Prudency (High)",
-                            exchange_rate=high_rate,
-                        )
-
-                    log_sync(
-                        sync_type="Prudency",
-                        currency_pair=f"{pair_str} (High)",
-                        status="Success",
-                        exchange_rate=high_rate,
-                    )
-
-                # Prudency Low (for income - worst case is lower rate)
-                if result.get("low_rate"):
-                    low_rate = result.get("low_rate")
-                    log_debug(f"Prudency low rate: {low_rate}")
-
-                    if settings.store_historical_data:
-                        store_rate_log(
-                            from_currency=from_currency,
-                            to_currency=to_currency,
-                            rate_date=month_end_date,
-                            rate_type="Prudency (Low)",
-                            exchange_rate=low_rate,
-                        )
-
-                    log_sync(
-                        sync_type="Prudency",
-                        currency_pair=f"{pair_str} (Low)",
-                        status="Success",
-                        exchange_rate=low_rate,
-                    )
 
             success_count += 1
             log_info(f"Successfully synced monthly rates for {pair_str}")
@@ -908,7 +864,7 @@ def backfill_historical_rates(months=6):
 
 def backfill_month_rates(month_date, client, enabled_pairs, settings):
     """
-    Backfill monthly rates (closing, average, prudency) for a specific month.
+    Backfill monthly rates (closing, average) for a specific month.
     Uses fallback strategies for exotic currency pairs.
     """
     from datetime import datetime
@@ -990,30 +946,6 @@ def backfill_month_rates(month_date, client, enabled_pairs, settings):
                         rate_type="Monthly Average",
                         exchange_rate=avg_rate,
                     )
-
-            # Calculate and store prudency rates
-            highs = [r["high"] for r in month_rates if r["high"] > 0]
-            lows = [r["low"] for r in month_rates if r["low"] > 0]
-
-            if highs and settings.store_historical_data:
-                log_debug(f"Prudency high for {pair_str}: {max(highs)}")
-                store_rate_log(
-                    from_currency=from_currency,
-                    to_currency=to_currency,
-                    rate_date=month_end_str,
-                    rate_type="Prudency (High)",
-                    exchange_rate=max(highs),
-                )
-
-            if lows and settings.store_historical_data:
-                log_debug(f"Prudency low for {pair_str}: {min(lows)}")
-                store_rate_log(
-                    from_currency=from_currency,
-                    to_currency=to_currency,
-                    rate_date=month_end_str,
-                    rate_type="Prudency (Low)",
-                    exchange_rate=min(lows),
-                )
 
             frappe.db.commit()
 

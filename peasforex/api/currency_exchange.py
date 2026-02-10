@@ -20,37 +20,39 @@ def fetch_rate(from_currency, to_currency):
     """
     Fetch current exchange rate from Alpha Vantage.
     Called from Currency Exchange form.
-    
+
     Args:
         from_currency: Source currency code
         to_currency: Target currency code
-        
+
     Returns:
         dict: {exchange_rate: float} or {error: str}
     """
     from peasforex.api.alpha_vantage import AlphaVantageClient
-    
+
     # Check if integration is enabled
     settings = frappe.get_single("Forex Settings")
     if not settings.enabled or not settings.api_key:
         return {
-            "error": _("Forex integration is not configured. Please set up Forex Settings first.")
+            "error": _(
+                "Forex integration is not configured. Please set up Forex Settings first."
+            )
         }
-    
+
     try:
         client = AlphaVantageClient()
         result = client.get_exchange_rate(from_currency, to_currency)
-        
+
         if result.get("error"):
             return {"error": result.get("error")}
-        
+
         return {
             "exchange_rate": result.get("exchange_rate"),
             "from_currency": from_currency,
             "to_currency": to_currency,
-            "last_refreshed": result.get("last_refreshed")
+            "last_refreshed": result.get("last_refreshed"),
         }
-        
+
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Fetch Exchange Rate Error")
         return {"error": str(e)}
@@ -60,12 +62,12 @@ def fetch_rate(from_currency, to_currency):
 def get_latest_rate(from_currency, to_currency, rate_type="Spot"):
     """
     Get the latest exchange rate from Forex Rate Log.
-    
+
     Args:
         from_currency: Source currency code
         to_currency: Target currency code
-        rate_type: Type of rate (Spot, Closing, Monthly Average, Prudency)
-        
+        rate_type: Type of rate (Spot, Closing, Monthly Average, PEAS Internal Prudency)
+
     Returns:
         dict: Rate information or None
     """
@@ -74,11 +76,11 @@ def get_latest_rate(from_currency, to_currency, rate_type="Spot"):
         filters={
             "from_currency": from_currency,
             "to_currency": to_currency,
-            "rate_type": rate_type
+            "rate_type": rate_type,
         },
         fieldname=["exchange_rate", "rate_date", "synced_at"],
         order_by="rate_date desc",
-        as_dict=True
+        as_dict=True,
     )
-    
+
     return rate

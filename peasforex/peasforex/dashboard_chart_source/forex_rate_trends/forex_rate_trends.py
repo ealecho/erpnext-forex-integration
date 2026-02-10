@@ -15,9 +15,8 @@ VALID_RATE_TYPES = [
     "Spot",
     "Closing",
     "Monthly Average",
-    "Prudency (High)",
-    "Prudency (Low)",
     "PEAS Internal Prudency",
+    "Central Bank Rate",
 ]
 
 

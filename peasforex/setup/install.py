@@ -40,18 +40,20 @@ def after_install():
     log_info("=" * 50)
     log_info("Starting Peasforex after_install")
     log_info("=" * 50)
-    
+
     try:
         create_default_settings()
         create_dashboard_charts()
         create_number_cards()
         frappe.db.commit()
         log_info("Installation completed successfully")
-        
+
         frappe.msgprint(
-            _("Peasforex installed successfully! Please configure your API key in Forex Settings."),
+            _(
+                "Peasforex installed successfully! Please configure your API key in Forex Settings."
+            ),
             title=_("Installation Complete"),
-            indicator="green"
+            indicator="green",
         )
     except Exception as e:
         log_error(f"Installation failed: {str(e)}")
@@ -73,12 +75,12 @@ def create_default_settings():
     Create default Forex Settings with predefined currency pairs.
     """
     log_info("Creating default settings")
-    
+
     # Check if settings already exist (for reinstall scenarios)
     if frappe.db.exists("Forex Settings", "Forex Settings"):
         log_info("Forex Settings already exists, skipping creation")
         return
-    
+
     # Default currency pairs as specified
     default_pairs = [
         {"from_currency": "GBP", "to_currency": "UGX", "enabled": 1},
@@ -90,37 +92,43 @@ def create_default_settings():
         {"from_currency": "DKK", "to_currency": "GBP", "enabled": 1},
         {"from_currency": "EUR", "to_currency": "GBP", "enabled": 1},
     ]
-    
+
     log_info(f"Default pairs to create: {len(default_pairs)}")
-    
+
     # Ensure currencies exist
     ensure_currencies_exist()
-    
+
     # Create the settings document
     log_debug("Creating Forex Settings document")
-    settings = frappe.get_doc({
-        "doctype": "Forex Settings",
-        "enabled": 0,  # Disabled by default until API key is set
-        "create_bidirectional_rates": 1,
-        "auto_update_currency_exchange": 1,
-        "store_historical_data": 1,
-        "apply_to_all_companies": 1,
-        "currency_pairs": []
-    })
-    
+    settings = frappe.get_doc(
+        {
+            "doctype": "Forex Settings",
+            "enabled": 0,  # Disabled by default until API key is set
+            "create_bidirectional_rates": 1,
+            "auto_update_currency_exchange": 1,
+            "store_historical_data": 1,
+            "apply_to_all_companies": 1,
+            "currency_pairs": [],
+        }
+    )
+
     # Add default pairs
     for pair in default_pairs:
-        log_debug(f"Adding currency pair: {pair['from_currency']}-{pair['to_currency']}")
-        settings.append("currency_pairs", {
-            "from_currency": pair["from_currency"],
-            "to_currency": pair["to_currency"],
-            "enabled": pair["enabled"],
-            "sync_spot_daily": 1,
-            "sync_closing_monthly": 1,
-            "sync_average_monthly": 1,
-            "sync_prudency_monthly": 1
-        })
-    
+        log_debug(
+            f"Adding currency pair: {pair['from_currency']}-{pair['to_currency']}"
+        )
+        settings.append(
+            "currency_pairs",
+            {
+                "from_currency": pair["from_currency"],
+                "to_currency": pair["to_currency"],
+                "enabled": pair["enabled"],
+                "sync_spot_daily": 1,
+                "sync_closing_monthly": 1,
+                "sync_average_monthly": 1,
+            },
+        )
+
     try:
         settings.insert(ignore_permissions=True)
         log_info(f"Forex Settings created with {len(default_pairs)} currency pairs")
@@ -135,31 +143,77 @@ def ensure_currencies_exist():
     Ensure all required currencies exist in the system.
     """
     log_info("Ensuring required currencies exist")
-    
+
     required_currencies = [
-        {"currency_name": "GBP", "symbol": "£", "fraction": "Pence", "fraction_units": 100, "smallest_currency_fraction_value": 0.01},
-        {"currency_name": "USD", "symbol": "$", "fraction": "Cents", "fraction_units": 100, "smallest_currency_fraction_value": 0.01},
-        {"currency_name": "EUR", "symbol": "€", "fraction": "Cents", "fraction_units": 100, "smallest_currency_fraction_value": 0.01},
-        {"currency_name": "UGX", "symbol": "USh", "fraction": "Cents", "fraction_units": 100, "smallest_currency_fraction_value": 1},
-        {"currency_name": "ZMW", "symbol": "ZK", "fraction": "Ngwee", "fraction_units": 100, "smallest_currency_fraction_value": 0.01},
-        {"currency_name": "GHS", "symbol": "GH₵", "fraction": "Pesewas", "fraction_units": 100, "smallest_currency_fraction_value": 0.01},
-        {"currency_name": "DKK", "symbol": "kr", "fraction": "Øre", "fraction_units": 100, "smallest_currency_fraction_value": 0.01},
+        {
+            "currency_name": "GBP",
+            "symbol": "£",
+            "fraction": "Pence",
+            "fraction_units": 100,
+            "smallest_currency_fraction_value": 0.01,
+        },
+        {
+            "currency_name": "USD",
+            "symbol": "$",
+            "fraction": "Cents",
+            "fraction_units": 100,
+            "smallest_currency_fraction_value": 0.01,
+        },
+        {
+            "currency_name": "EUR",
+            "symbol": "€",
+            "fraction": "Cents",
+            "fraction_units": 100,
+            "smallest_currency_fraction_value": 0.01,
+        },
+        {
+            "currency_name": "UGX",
+            "symbol": "USh",
+            "fraction": "Cents",
+            "fraction_units": 100,
+            "smallest_currency_fraction_value": 1,
+        },
+        {
+            "currency_name": "ZMW",
+            "symbol": "ZK",
+            "fraction": "Ngwee",
+            "fraction_units": 100,
+            "smallest_currency_fraction_value": 0.01,
+        },
+        {
+            "currency_name": "GHS",
+            "symbol": "GH₵",
+            "fraction": "Pesewas",
+            "fraction_units": 100,
+            "smallest_currency_fraction_value": 0.01,
+        },
+        {
+            "currency_name": "DKK",
+            "symbol": "kr",
+            "fraction": "Øre",
+            "fraction_units": 100,
+            "smallest_currency_fraction_value": 0.01,
+        },
     ]
-    
+
     for currency in required_currencies:
         currency_name = currency["currency_name"]
         if not frappe.db.exists("Currency", currency_name):
             log_info(f"Creating currency: {currency_name}")
             try:
-                doc = frappe.get_doc({
-                    "doctype": "Currency",
-                    "currency_name": currency_name,
-                    "enabled": 1,
-                    "symbol": currency["symbol"],
-                    "fraction": currency.get("fraction", ""),
-                    "fraction_units": currency.get("fraction_units", 100),
-                    "smallest_currency_fraction_value": currency.get("smallest_currency_fraction_value", 0.01)
-                })
+                doc = frappe.get_doc(
+                    {
+                        "doctype": "Currency",
+                        "currency_name": currency_name,
+                        "enabled": 1,
+                        "symbol": currency["symbol"],
+                        "fraction": currency.get("fraction", ""),
+                        "fraction_units": currency.get("fraction_units", 100),
+                        "smallest_currency_fraction_value": currency.get(
+                            "smallest_currency_fraction_value", 0.01
+                        ),
+                    }
+                )
                 doc.insert(ignore_permissions=True)
                 log_debug(f"Currency {currency_name} created successfully")
             except Exception as e:
@@ -167,7 +221,7 @@ def ensure_currencies_exist():
                 # Don't raise - currency might already exist with different case or similar
         else:
             log_debug(f"Currency {currency_name} already exists")
-    
+
     log_info("Currency check completed")
 
 
@@ -177,10 +231,10 @@ def create_dashboard_charts():
     Uses custom chart sources for actual exchange rate values.
     """
     log_info("Creating Dashboard Charts")
-    
+
     # First, ensure Dashboard Chart Sources exist
     create_chart_sources()
-    
+
     charts = [
         # Custom chart showing actual exchange rate trends over time
         {
@@ -196,7 +250,7 @@ def create_dashboard_charts():
             "filters_json": "{}",
             "is_public": 1,
             "is_standard": 1,
-            "module": "Peasforex"
+            "module": "Peasforex",
         },
         # Custom chart showing latest rates for each currency pair
         {
@@ -209,7 +263,7 @@ def create_dashboard_charts():
             "filters_json": "{}",
             "is_public": 1,
             "is_standard": 1,
-            "module": "Peasforex"
+            "module": "Peasforex",
         },
         # Keep some count-based charts for operational metrics
         {
@@ -224,7 +278,7 @@ def create_dashboard_charts():
             "filters_json": "{}",
             "is_public": 1,
             "is_standard": 1,
-            "module": "Peasforex"
+            "module": "Peasforex",
         },
         {
             "doctype": "Dashboard Chart",
@@ -240,7 +294,7 @@ def create_dashboard_charts():
             "filters_json": "{}",
             "is_public": 1,
             "is_standard": 1,
-            "module": "Peasforex"
+            "module": "Peasforex",
         },
         {
             "doctype": "Dashboard Chart",
@@ -254,10 +308,10 @@ def create_dashboard_charts():
             "filters_json": "{}",
             "is_public": 1,
             "is_standard": 1,
-            "module": "Peasforex"
-        }
+            "module": "Peasforex",
+        },
     ]
-    
+
     for chart in charts:
         chart_name = chart["chart_name"]
         try:
@@ -270,7 +324,7 @@ def create_dashboard_charts():
                 log_debug(f"Dashboard Chart already exists: {chart_name}")
         except Exception as e:
             log_error(f"Failed to create Dashboard Chart {chart_name}: {str(e)}")
-    
+
     log_info(f"Dashboard Charts creation completed")
 
 
@@ -279,24 +333,24 @@ def create_chart_sources():
     Create Dashboard Chart Source records for custom charts.
     """
     log_info("Creating Dashboard Chart Sources")
-    
+
     sources = [
         {
             "doctype": "Dashboard Chart Source",
             "name": "Forex Rate Trends",
             "source_name": "Forex Rate Trends",
             "module": "Peasforex",
-            "timeseries": 1
+            "timeseries": 1,
         },
         {
             "doctype": "Dashboard Chart Source",
             "name": "Forex Latest Rates",
             "source_name": "Forex Latest Rates",
             "module": "Peasforex",
-            "timeseries": 0
-        }
+            "timeseries": 0,
+        },
     ]
-    
+
     for source in sources:
         source_name = source["name"]
         try:
@@ -308,7 +362,9 @@ def create_chart_sources():
             else:
                 log_debug(f"Dashboard Chart Source already exists: {source_name}")
         except Exception as e:
-            log_error(f"Failed to create Dashboard Chart Source {source_name}: {str(e)}")
+            log_error(
+                f"Failed to create Dashboard Chart Source {source_name}: {str(e)}"
+            )
 
 
 def create_number_cards():
@@ -316,7 +372,7 @@ def create_number_cards():
     Create Number Cards for the Forex Integration dashboard.
     """
     log_info("Creating Number Cards")
-    
+
     cards = [
         {
             "doctype": "Number Card",
@@ -331,7 +387,7 @@ def create_number_cards():
             "color": "#2490EF",
             "is_public": 1,
             "is_standard": 1,
-            "module": "Peasforex"
+            "module": "Peasforex",
         },
         {
             "doctype": "Number Card",
@@ -340,13 +396,13 @@ def create_number_cards():
             "type": "Document Type",
             "document_type": "Forex Sync Log",
             "function": "Count",
-            "filters_json": "{\"status\": \"Success\"}",
+            "filters_json": '{"status": "Success"}',
             "show_percentage_stats": 1,
             "stats_time_interval": "Daily",
             "color": "#29CD42",
             "is_public": 1,
             "is_standard": 1,
-            "module": "Peasforex"
+            "module": "Peasforex",
         },
         {
             "doctype": "Number Card",
@@ -355,13 +411,13 @@ def create_number_cards():
             "type": "Document Type",
             "document_type": "Forex Sync Log",
             "function": "Count",
-            "filters_json": "{\"status\": \"Error\"}",
+            "filters_json": '{"status": "Error"}',
             "show_percentage_stats": 1,
             "stats_time_interval": "Daily",
             "color": "#FF5858",
             "is_public": 1,
             "is_standard": 1,
-            "module": "Peasforex"
+            "module": "Peasforex",
         },
         {
             "doctype": "Number Card",
@@ -375,7 +431,7 @@ def create_number_cards():
             "color": "#ECAD4B",
             "is_public": 1,
             "is_standard": 1,
-            "module": "Peasforex"
+            "module": "Peasforex",
         },
         {
             "doctype": "Number Card",
@@ -390,10 +446,10 @@ def create_number_cards():
             "color": "#7B68EE",
             "is_public": 1,
             "is_standard": 1,
-            "module": "Peasforex"
-        }
+            "module": "Peasforex",
+        },
     ]
-    
+
     for card in cards:
         card_name = card["name"]
         try:
@@ -406,5 +462,5 @@ def create_number_cards():
                 log_debug(f"Number Card already exists: {card_name}")
         except Exception as e:
             log_error(f"Failed to create Number Card {card_name}: {str(e)}")
-    
+
     log_info(f"Number Cards creation completed")

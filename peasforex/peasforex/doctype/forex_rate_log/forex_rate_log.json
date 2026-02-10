@@ -60,7 +60,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Rate Type",
-   "options": "Spot\nClosing\nMonthly Average\nPrudency (High)\nPrudency (Low)\nPEAS Internal Prudency\nCentral Bank Rate",
+    "options": "Spot\nClosing\nMonthly Average\nPEAS Internal Prudency\nCentral Bank Rate",
    "reqd": 1
   },
   {

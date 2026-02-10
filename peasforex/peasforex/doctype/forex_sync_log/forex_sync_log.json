@@ -30,7 +30,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Sync Type",
-   "options": "Spot (Daily)\nClosing (Monthly)\nMonthly Average\nPrudency\nBackfill\nManual"
+    "options": "Spot (Daily)\nClosing (Monthly)\nMonthly Average\nBackfill\nManual"
   },
   {
    "fieldname": "currency_pair",

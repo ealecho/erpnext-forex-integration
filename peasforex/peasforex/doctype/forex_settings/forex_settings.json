@@ -131,7 +131,7 @@
    "fieldname": "rate_type_info",
    "fieldtype": "HTML",
    "label": "Rate Type Info",
-   "options": "<div class=\"alert alert-info\">\n<h5>Rate Types Explained</h5>\n<ul>\n<li><strong>Spot Rate (Daily):</strong> Current market exchange rate, synced daily</li>\n<li><strong>Closing Rate:</strong> Last trading day rate of the previous month, synced on 1st of each month</li>\n<li><strong>Monthly Average:</strong> Average rate for the previous month, calculated from daily rates</li>\n<li><strong>Prudency Rate:</strong> Most conservative rate (highest for expenses, lowest for income) from the previous month</li>\n<li><strong>PEAS Internal Prudency:</strong> 6-month rolling average × Prudency Factor (default 0.95). Requires at least 6 months of Monthly Average data.</li>\n</ul>\n</div>"
+   "options": "<div class=\"alert alert-info\">\n<h5>Rate Types Explained</h5>\n<ul>\n<li><strong>Spot Rate (Daily):</strong> Current market exchange rate, synced daily</li>\n<li><strong>Closing Rate:</strong> Last trading day rate of the previous month, synced on 1st of each month</li>\n<li><strong>Monthly Average:</strong> Average rate for the previous month, calculated from daily rates</li>\n<li><strong>PEAS Internal Prudency:</strong> 6-month rolling average × Prudency Factor (default 0.95). Requires at least 6 months of Monthly Average data.</li>\n</ul>\n</div>"
   },
   {
    "fieldname": "section_break_sync_status",

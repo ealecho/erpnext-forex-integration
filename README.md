@@ -8,7 +8,7 @@ A Frappe/ERPNext app that integrates with Alpha Vantage to automatically sync fo
 - **Monthly Rate Calculations**: On the 1st of each month, calculates:
   - **Closing Rate**: Last trading day rate of the previous month
   - **Monthly Average**: Average of all daily closing rates
-  - **Prudency Rates**: Highest and lowest rates for conservative accounting
+  - **PEAS Internal Prudency**: 6-month rolling average x Prudency Factor
 - **Bidirectional Rates**: Automatically creates both forward and reverse exchange rates
 - **Company-Specific Application**: Apply rates to all companies or select specific ones
 - **Historical Data Storage**: Stores all rates in a log for reporting and analysis
@@ -41,14 +41,14 @@ The app comes with these default currency pairs configured:
 
 | From | To  | Suggested Company | Sync Types |
 |------|-----|-------------------|------------|
-| GBP  | UGX | PEAS Uganda       | Spot, Closing, Average, Prudency |
-| GBP  | ZMW | PEAS Zambia       | Spot, Closing, Average, Prudency |
-| GBP  | GHS | PEAS Ghana        | Spot, Closing, Average, Prudency |
-| GBP  | USD | PEAS Global       | Spot, Closing, Average, Prudency |
-| USD  | UGX | PEAS Uganda       | Spot, Closing, Average, Prudency |
-| USD  | ZMW | PEAS Zambia       | Spot, Closing, Average, Prudency |
-| DKK  | GBP | PEAS Global       | Spot, Closing, Average, Prudency |
-| EUR  | GBP | PEAS Global       | Spot, Closing, Average, Prudency |
+| GBP  | UGX | PEAS Uganda       | Spot, Closing, Average |
+| GBP  | ZMW | PEAS Zambia       | Spot, Closing, Average |
+| GBP  | GHS | PEAS Ghana        | Spot, Closing, Average |
+| GBP  | USD | PEAS Global       | Spot, Closing, Average |
+| USD  | UGX | PEAS Uganda       | Spot, Closing, Average |
+| USD  | ZMW | PEAS Zambia       | Spot, Closing, Average |
+| DKK  | GBP | PEAS Global       | Spot, Closing, Average |
+| EUR  | GBP | PEAS Global       | Spot, Closing, Average |
 
 You can add or remove currency pairs and assign each to a specific company in the Forex Settings.
 
@@ -153,7 +153,7 @@ After installation, the app creates:
 | Schedule | Task | Description |
 |----------|------|-------------|
 | Daily 6:00 AM | `sync_daily_spot_rates` | Fetches current spot rates for all pairs |
-| Monthly 1st 7:00 AM | `sync_monthly_rates` | Calculates closing, average, and prudency rates |
+| Monthly 1st 7:00 AM | `sync_monthly_rates` | Calculates closing and average rates |
 | Daily (fallback) | `check_and_sync_daily` | Ensures daily sync runs if cron missed |
 
 ## API Call Estimates
@@ -163,7 +163,7 @@ After installation, the app creates:
 
 ### Monthly Sync (1st of month)
 - 8 pairs × 1 call (for previous month data) = **8 API calls/month**
-- (Uses daily historical data to calculate closing, average, and prudency rates)
+- (Uses daily historical data to calculate closing and average rates)
 
 ### Backfill (one-time)
 - 8 pairs × 1 call = **8 API calls**
@@ -177,8 +177,8 @@ After installation, the app creates:
 | **Spot** | Current market rate | Daily transactions |
 | **Closing** | Last rate of month | Month-end valuations |
 | **Monthly Average** | Average of daily closes | Average rate accounting |
-| **Prudency (High)** | Highest rate in month | Conservative expense valuation |
-| **Prudency (Low)** | Lowest rate in month | Conservative income valuation |
+| **PEAS Internal Prudency** | 6-month rolling average x Prudency Factor | Conservative budgeting |
+| **Central Bank Rate** | Official central bank rate | Audit compliance |
 
 ## DocTypes
 
@@ -189,7 +189,7 @@ Main configuration for the integration.
 Defines currency pairs to sync with:
 - From/To currency selection
 - **Target Company**: Assign rates to a specific company
-- Individual sync type toggles (Spot, Closing, Average, Prudency)
+- Individual sync type toggles (Spot, Closing, Average)
 
 ### Applicable Company (Child Table)
 Lists companies to apply exchange rates to.
@@ -218,7 +218,7 @@ Verifies API key and connectivity by fetching a sample rate.
 Immediately triggers a sync of spot rates for all enabled pairs.
 
 ### Sync Monthly Rates
-Immediately triggers a sync of monthly rates (closing, average, prudency).
+Immediately triggers a sync of monthly rates (closing, average).
 
 ### Backfill Historical
 Backfills X months of historical data (default: 2 months).

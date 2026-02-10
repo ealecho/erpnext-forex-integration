@@ -86,7 +86,7 @@ frappe.ui.form.on("Forex Settings", {
     
     sync_monthly_now: function(frm) {
         frappe.confirm(
-            __("This will sync monthly rates (Closing, Average, Prudency) for the previous month. Continue?"),
+            __("This will sync monthly rates (Closing, Average) for the previous month. Continue?"),
             function() {
                 frappe.call({
                     method: "sync_monthly_now",
@@ -198,7 +198,6 @@ frappe.ui.form.on("Forex Settings", {
                 row.sync_spot_daily = 1;
                 row.sync_closing_monthly = 1;
                 row.sync_average_monthly = 1;
-                row.sync_prudency_monthly = 1;
                 added++;
             }
         });
