@@ -68,7 +68,7 @@
    "fieldname": "sync_average_monthly",
    "fieldtype": "Check",
    "label": "Sync Monthly Average"
-  },
+   }
   ],
  "index_web_pages_for_search": 1,
  "istable": 1,
