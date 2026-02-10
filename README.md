@@ -8,7 +8,6 @@ A Frappe/ERPNext app that integrates with Alpha Vantage to automatically sync fo
 - **Monthly Rate Calculations**: On the 1st of each month, calculates:
   - **Closing Rate**: Last trading day rate of the previous month
   - **Monthly Average**: Average of all daily closing rates
-  - **PEAS Internal Prudency**: 6-month rolling average x Prudency Factor
 - **Bidirectional Rates**: Automatically creates both forward and reverse exchange rates
 - **Company-Specific Application**: Apply rates to all companies or select specific ones
 - **Historical Data Storage**: Stores all rates in a log for reporting and analysis
@@ -177,7 +176,6 @@ After installation, the app creates:
 | **Spot** | Current market rate | Daily transactions |
 | **Closing** | Last rate of month | Month-end valuations |
 | **Monthly Average** | Average of daily closes | Average rate accounting |
-| **PEAS Internal Prudency** | 6-month rolling average x Prudency Factor | Conservative budgeting |
 | **Central Bank Rate** | Official central bank rate | Audit compliance |
 
 ## DocTypes

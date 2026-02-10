@@ -170,29 +170,6 @@ class ForexSettings(Document):
             ).format(months),
         }
 
-    @frappe.whitelist()
-    def calculate_peas_prudency(self):
-        """Calculate PEAS Internal Prudency rates for all currency pairss"""
-        log_info("Manual calculation triggered: calculate_peas_prudency")
-
-        if not self.enabled:
-            log_error("Calculation failed: Integration not enabled")
-            frappe.throw(_("Please enable the integration first"))
-
-        try:
-            from peasforex.tasks.sync_forex import calculate_all_peas_internal_prudency
-
-            log_debug("Running calculate_all_peas_internal_prudency")
-            result = calculate_all_peas_internal_prudency()
-
-            log_info(f"PEAS Prudency calculation completed: {result}")
-            return result
-
-        except Exception as e:
-            log_error(f"PEAS Prudency calculation exception: {str(e)}")
-            frappe.log_error(frappe.get_traceback(), "PEAS Prudency Calculation Error")
-            return {"status": "error", "message": str(e)}
-
     def get_enabled_pairs(self):
         """Get list of enabled currency pairs"""
         log_debug("Getting enabled currency pairs")

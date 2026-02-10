@@ -9,8 +9,7 @@ def execute():
     Remove all Forex Rate Log entries with rate_type 'Prudency (High)' or 'Prudency (Low)'
     and all Forex Sync Log entries with sync_type 'Prudency'.
 
-    These rate types are no longer used. PEAS Internal Prudency (6-month rolling
-    average x factor) replaces them.
+    These rate types are no longer used.
     """
     # Delete Forex Rate Log entries
     rate_log_count = frappe.db.count(

@@ -83,7 +83,6 @@ class TestForexRateLog(FrappeTestCase):
             "Spot",
             "Closing",
             "Monthly Average",
-            "PEAS Internal Prudency",
             "Central Bank Rate",
         ]
 

@@ -66,7 +66,7 @@ def get_latest_rate(from_currency, to_currency, rate_type="Spot"):
     Args:
         from_currency: Source currency code
         to_currency: Target currency code
-        rate_type: Type of rate (Spot, Closing, Monthly Average, PEAS Internal Prudency)
+        rate_type: Type of rate (Spot, Closing, Monthly Average, Central Bank Rate)
 
     Returns:
         dict: Rate information or None

@@ -15,9 +15,8 @@
   "store_historical_data",
   "column_break_2",
   "apply_to_all_companies",
-  "applicable_companies",
-  "peas_prudency_factor",
-  "section_break_currency_pairs",
+   "applicable_companies",
+   "section_break_currency_pairs",
   "currency_pairs",
   "section_break_rate_types",
   "rate_type_info",
@@ -101,14 +100,6 @@
     "options": "Applicable Company"
    },
    {
-    "default": "0.95",
-    "description": "Factor applied to 6-month rolling average for PEAS Internal Prudency Rate (e.g., 0.95 = 95% of average). Requires at least 6 months of Monthly Average data.",
-    "fieldname": "peas_prudency_factor",
-    "fieldtype": "Float",
-    "label": "PEAS Prudency Factor",
-    "precision": "2"
-   },
-   {
     "fieldname": "section_break_currency_pairs",
    "fieldtype": "Section Break",
    "label": "Currency Pairs"
@@ -131,7 +122,7 @@
    "fieldname": "rate_type_info",
    "fieldtype": "HTML",
    "label": "Rate Type Info",
-   "options": "<div class=\"alert alert-info\">\n<h5>Rate Types Explained</h5>\n<ul>\n<li><strong>Spot Rate (Daily):</strong> Current market exchange rate, synced daily</li>\n<li><strong>Closing Rate:</strong> Last trading day rate of the previous month, synced on 1st of each month</li>\n<li><strong>Monthly Average:</strong> Average rate for the previous month, calculated from daily rates</li>\n<li><strong>PEAS Internal Prudency:</strong> 6-month rolling average × Prudency Factor (default 0.95). Requires at least 6 months of Monthly Average data.</li>\n</ul>\n</div>"
+    "options": "<div class=\"alert alert-info\">\n<h5>Rate Types Explained</h5>\n<ul>\n<li><strong>Spot Rate (Daily):</strong> Current market exchange rate, synced daily</li>\n<li><strong>Closing Rate:</strong> Last trading day rate of the previous month, synced on 1st of each month</li>\n<li><strong>Monthly Average:</strong> Average rate for the previous month, calculated from daily rates</li>\n<li><strong>Central Bank Rate:</strong> Official central bank rate, entered manually for audit compliance</li>\n</ul>\n</div>"
   },
   {
    "fieldname": "section_break_sync_status",
