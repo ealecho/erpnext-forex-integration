@@ -146,16 +146,17 @@ def get_chart(data, filters):
         pair_key = f"{filters.get('from_currency')} → {filters.get('to_currency')}"
         pair_data = pairs.get(pair_key, data)
         
-        # Filter for spot rates for cleaner chart, fallback to all if no spot
-        spot_data = [d for d in pair_data if d.get("rate_type") == "Spot"]
-        if not spot_data:
-            spot_data = pair_data
-        
+        # Filter for Ask Rate for cleaner chart (the indicative transaction
+        # rate), fallback to all rate types if no Ask Rate data exists.
+        ask_data = [d for d in pair_data if d.get("rate_type") == "Ask Rate"]
+        if not ask_data:
+            ask_data = pair_data
+
         # Sort chronologically and limit to last 60 data points
-        spot_data = sorted(spot_data, key=lambda x: x.get("rate_date"))[-60:]
-        
-        labels = [format_short_date(d.get("rate_date")) for d in spot_data]
-        values = [float(d.get("exchange_rate") or 0) for d in spot_data]
+        ask_data = sorted(ask_data, key=lambda x: x.get("rate_date"))[-60:]
+
+        labels = [format_short_date(d.get("rate_date")) for d in ask_data]
+        values = [float(d.get("exchange_rate") or 0) for d in ask_data]
         
         return {
             "data": {
@@ -185,9 +186,9 @@ def get_chart(data, filters):
         all_dates = set()
         for pair_data in pairs.values():
             for row in pair_data:
-                if row.get("rate_type") == "Spot":
+                if row.get("rate_type") == "Ask Rate":
                     all_dates.add(row.get("rate_date"))
-        
+
         if not all_dates:
             # Fallback to all rate types
             for pair_data in pairs.values():
@@ -203,13 +204,13 @@ def get_chart(data, filters):
         colors = ["#7cd6fd", "#5e64ff", "#743ee2", "#ff5858", "#ffa00a", "#28a745", "#17a2b8", "#6c757d"]
         
         for idx, (pair_key, pair_data) in enumerate(pairs.items()):
-            # Build date -> rate mapping for this pair
+            # Build date -> rate mapping for this pair, preferring Ask Rate.
             date_rate_map = {}
             for row in pair_data:
-                if row.get("rate_type") == "Spot":
+                if row.get("rate_type") == "Ask Rate":
                     date_rate_map[row.get("rate_date")] = float(row.get("exchange_rate") or 0)
-            
-            # If no spot rates, use any rate
+
+            # If no Ask Rate data, fall back to any rate type
             if not date_rate_map:
                 for row in pair_data:
                     date_rate_map[row.get("rate_date")] = float(row.get("exchange_rate") or 0)

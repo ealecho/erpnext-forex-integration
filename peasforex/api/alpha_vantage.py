@@ -435,14 +435,14 @@ class AlphaVantageClient:
                 today = datetime.now().strftime("%Y-%m-%d")
                 rate = spot_result["exchange_rate"]
 
-                log_info(f"Using spot rate fallback for {pair_str}: {rate}")
+                log_info(f"Using current-rate fallback for {pair_str}: {rate}")
 
                 return {
                     "time_series": {
                         today: {"open": rate, "high": rate, "low": rate, "close": rate}
                     },
                     "meta_data": {
-                        "note": "Spot rate fallback - only today's rate available",
+                        "note": "Ask Rate fallback - only today's rate available",
                         "fallback": True,
                     },
                     "raw": spot_result.get("raw", {}),

@@ -59,14 +59,16 @@ def fetch_rate(from_currency, to_currency):
 
 
 @frappe.whitelist()
-def get_latest_rate(from_currency, to_currency, rate_type="Spot"):
+def get_latest_rate(from_currency, to_currency, rate_type="Ask Rate"):
     """
     Get the latest exchange rate from Forex Rate Log.
 
     Args:
         from_currency: Source currency code
         to_currency: Target currency code
-        rate_type: Type of rate (Spot, Closing, Monthly Average, Central Bank Rate)
+        rate_type: Type of rate (Ask Rate, Spot, Closing, Monthly Average, Central Bank Rate).
+                   Defaults to Ask Rate - the indicative rate used for transactions.
+                   Spot is reserved for manually-entered negotiated bank rates.
 
     Returns:
         dict: Rate information or None

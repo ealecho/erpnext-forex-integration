@@ -55,7 +55,7 @@
    "fieldname": "sync_spot_daily",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Sync Spot (Daily)"
+   "label": "Sync Ask Rate (Daily)"
   },
   {
    "default": "1",

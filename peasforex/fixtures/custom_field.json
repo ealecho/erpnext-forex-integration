@@ -1,0 +1,158 @@
+[
+ {
+  "doctype": "Custom Field",
+  "name": "Purchase Invoice-custom_forex_rate_source",
+  "dt": "Purchase Invoice",
+  "fieldname": "custom_forex_rate_source",
+  "label": "Forex Rate Source",
+  "fieldtype": "Select",
+  "options": "Auto\nAsk Rate\nSpot\nCentral Bank Rate\nManual",
+  "default": "Auto",
+  "insert_after": "conversion_rate",
+  "in_standard_filter": 1,
+  "description": "How conversion_rate is resolved. Auto: Spot then Ask Rate for the applied date. Manual: your typed rate (also logged as Spot for reuse today).",
+  "module": "Peasforex"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Purchase Invoice-custom_forex_rate_applied_date",
+  "dt": "Purchase Invoice",
+  "fieldname": "custom_forex_rate_applied_date",
+  "label": "Forex Rate Applied Date",
+  "fieldtype": "Date",
+  "insert_after": "custom_forex_rate_source",
+  "description": "Date used to look up the rate. Leave blank to use posting_date.",
+  "module": "Peasforex"
+ },
+
+ {
+  "doctype": "Custom Field",
+  "name": "Employee Advance-custom_forex_rate_source",
+  "dt": "Employee Advance",
+  "fieldname": "custom_forex_rate_source",
+  "label": "Forex Rate Source",
+  "fieldtype": "Select",
+  "options": "Auto\nAsk Rate\nSpot\nCentral Bank Rate\nManual",
+  "default": "Auto",
+  "insert_after": "custom_advance_exchange_rate",
+  "depends_on": "eval:doc.custom_is_multicurrency",
+  "description": "How custom_advance_exchange_rate is resolved. Auto: Spot then Ask Rate. Manual: your typed rate (logged as Spot for reuse today).",
+  "module": "Peasforex"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Employee Advance-custom_forex_rate_applied_date",
+  "dt": "Employee Advance",
+  "fieldname": "custom_forex_rate_applied_date",
+  "label": "Forex Rate Applied Date",
+  "fieldtype": "Date",
+  "insert_after": "custom_forex_rate_source",
+  "depends_on": "eval:doc.custom_is_multicurrency",
+  "description": "Date used to look up the rate. Leave blank to use posting_date.",
+  "module": "Peasforex"
+ },
+
+ {
+  "doctype": "Custom Field",
+  "name": "Payment Entry-custom_forex_rate_source",
+  "dt": "Payment Entry",
+  "fieldname": "custom_forex_rate_source",
+  "label": "Forex Rate Source",
+  "fieldtype": "Select",
+  "options": "Auto\nAsk Rate\nSpot\nCentral Bank Rate\nManual",
+  "default": "Auto",
+  "insert_after": "source_exchange_rate",
+  "description": "How source/target exchange rates are resolved. Auto: Spot then Ask Rate. Manual: your typed rates.",
+  "module": "Peasforex"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Payment Entry-custom_forex_rate_applied_date",
+  "dt": "Payment Entry",
+  "fieldname": "custom_forex_rate_applied_date",
+  "label": "Forex Rate Applied Date",
+  "fieldtype": "Date",
+  "insert_after": "custom_forex_rate_source",
+  "description": "Date used to look up the rate. Leave blank to use posting_date.",
+  "module": "Peasforex"
+ },
+
+ {
+  "doctype": "Custom Field",
+  "name": "Journal Entry-custom_forex_rate_source",
+  "dt": "Journal Entry",
+  "fieldname": "custom_forex_rate_source",
+  "label": "Forex Rate Source",
+  "fieldtype": "Select",
+  "options": "Auto\nAsk Rate\nSpot\nCentral Bank Rate\nManual\nInherited",
+  "default": "Auto",
+  "insert_after": "multi_currency",
+  "depends_on": "eval:doc.multi_currency",
+  "description": "How per-row exchange_rate is resolved. Auto: Spot then Ask. Inherited: set by programmatic callers (settlement JEs).",
+  "module": "Peasforex"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Journal Entry-custom_forex_rate_applied_date",
+  "dt": "Journal Entry",
+  "fieldname": "custom_forex_rate_applied_date",
+  "label": "Forex Rate Applied Date",
+  "fieldtype": "Date",
+  "insert_after": "custom_forex_rate_source",
+  "depends_on": "eval:doc.multi_currency",
+  "description": "Date used to look up rates. Leave blank to use posting_date.",
+  "module": "Peasforex"
+ },
+
+ {
+  "doctype": "Custom Field",
+  "name": "Expense Breakdown-custom_currency",
+  "dt": "Expense Breakdown",
+  "fieldname": "custom_currency",
+  "label": "Currency",
+  "fieldtype": "Link",
+  "options": "Currency",
+  "insert_after": "amount",
+  "description": "Line currency. Defaults to parent document currency.",
+  "module": "Peasforex"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Expense Breakdown-custom_exchange_rate",
+  "dt": "Expense Breakdown",
+  "fieldname": "custom_exchange_rate",
+  "label": "Exchange Rate",
+  "fieldtype": "Float",
+  "precision": "9",
+  "insert_after": "custom_currency",
+  "default": "1",
+  "module": "Peasforex"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "Expense Breakdown-custom_amount_in_base_currency",
+  "dt": "Expense Breakdown",
+  "fieldname": "custom_amount_in_base_currency",
+  "label": "Amount (Base Currency)",
+  "fieldtype": "Float",
+  "precision": "9",
+  "read_only": 1,
+  "insert_after": "custom_exchange_rate",
+  "description": "amount x custom_exchange_rate, in the company's base currency.",
+  "module": "Peasforex"
+ },
+
+ {
+  "doctype": "Custom Field",
+  "name": "Expense Claim Detail-custom_forex_rate_source",
+  "dt": "Expense Claim Detail",
+  "fieldname": "custom_forex_rate_source",
+  "label": "Forex Rate Source",
+  "fieldtype": "Select",
+  "options": "Auto\nAsk Rate\nSpot\nCentral Bank Rate\nManual\nInherited",
+  "default": "Auto",
+  "insert_after": "custom_exchange_rate",
+  "description": "Auto: Spot then Ask Rate for expense_date. Inherited: rate locked to the linked Employee Advance.",
+  "module": "Peasforex"
+ }
+]

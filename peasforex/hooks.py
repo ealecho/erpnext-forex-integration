@@ -50,7 +50,27 @@ scheduler_events = {
 doc_events = {
     "Currency Exchange": {
         "before_save": "peasforex.api.currency_exchange.before_save"
-    }
+    },
+    # Forex rate resolution on transaction doctypes. Each hook populates the
+    # native rate field(s) based on custom_forex_rate_source + applied_date.
+    # See peasforex/rates.py for resolution semantics (Auto: Spot→Ask).
+    "Purchase Invoice": {
+        "before_validate": "peasforex.rates.apply"
+    },
+    "Employee Advance": {
+        "before_validate": "peasforex.rates.apply"
+    },
+    "Payment Entry": {
+        "before_validate": "peasforex.rates.apply"
+    },
+    "Journal Entry": {
+        "before_validate": "peasforex.rates.apply"
+    },
+    # NOTE: "Accountability" hook is intentionally not registered - the
+    # distribution_csf app that owns it isn't installed on every PEAS site.
+    # Re-enable here (and restore custom_field fixture entries) when
+    # distribution_csf is present. The rates.py ADAPTERS entry stays so
+    # the resolver works once the hook is wired.
 }
 
 # Jinja Environment

@@ -371,7 +371,7 @@ def sync_daily_spot_rates():
             if result.get("error"):
                 log_error(f"API error for {pair_str}: {result.get('error')}")
                 log_sync(
-                    sync_type="Spot (Daily)",
+                    sync_type="Ask Rate (Daily)",
                     currency_pair=pair_str,
                     status="Error",
                     error_message=result.get("error"),
@@ -380,13 +380,13 @@ def sync_daily_spot_rates():
                 error_count += 1
                 continue
 
-            rate = result.get("exchange_rate")
+            rate = result.get("ask_price") or result.get("exchange_rate")
             log_debug(f"Received rate for {pair_str}: {rate}")
 
             if not rate or rate <= 0:
                 log_error(f"Invalid rate received for {pair_str}: {rate}")
                 log_sync(
-                    sync_type="Spot (Daily)",
+                    sync_type="Ask Rate (Daily)",
                     currency_pair=pair_str,
                     status="Error",
                     error_message="Invalid exchange rate received",
@@ -419,14 +419,22 @@ def sync_daily_spot_rates():
                     from_currency=from_currency,
                     to_currency=to_currency,
                     rate_date=current_date,
-                    rate_type="Spot",
+                    rate_type="Ask Rate",
                     exchange_rate=rate,
                     api_response=result.get("raw"),
                 )
+                if settings.create_bidirectional_rates and rate > 0:
+                    store_rate_log(
+                        from_currency=to_currency,
+                        to_currency=from_currency,
+                        rate_date=current_date,
+                        rate_type="Ask Rate",
+                        exchange_rate=1.0 / rate,
+                    )
 
             # Log success
             log_sync(
-                sync_type="Spot (Daily)",
+                sync_type="Ask Rate (Daily)",
                 currency_pair=pair_str,
                 status="Success",
                 exchange_rate=rate,
@@ -439,7 +447,7 @@ def sync_daily_spot_rates():
             log_error(f"Exception syncing {pair_str}: {str(e)}")
             frappe.log_error(frappe.get_traceback(), f"Forex Sync Error: {pair_str}")
             log_sync(
-                sync_type="Spot (Daily)",
+                sync_type="Ask Rate (Daily)",
                 currency_pair=pair_str,
                 status="Error",
                 error_message=str(e),
@@ -562,6 +570,14 @@ def sync_monthly_rates():
                         rate_type="Closing",
                         exchange_rate=closing_rate,
                     )
+                    if settings.create_bidirectional_rates and closing_rate > 0:
+                        store_rate_log(
+                            from_currency=to_currency,
+                            to_currency=from_currency,
+                            rate_date=month_end_date,
+                            rate_type="Closing",
+                            exchange_rate=1.0 / closing_rate,
+                        )
 
                 log_sync(
                     sync_type="Closing (Monthly)",
@@ -583,6 +599,14 @@ def sync_monthly_rates():
                         rate_type="Monthly Average",
                         exchange_rate=avg_rate,
                     )
+                    if settings.create_bidirectional_rates and avg_rate > 0:
+                        store_rate_log(
+                            from_currency=to_currency,
+                            to_currency=from_currency,
+                            rate_date=month_end_date,
+                            rate_type="Monthly Average",
+                            exchange_rate=1.0 / avg_rate,
+                        )
 
                 log_sync(
                     sync_type="Monthly Average",
@@ -772,19 +796,30 @@ def backfill_historical_rates(months=6):
                         except Exception as e:
                             log_error(f"Failed to create rate for {date_str}: {str(e)}")
 
-                    # Store in rate log
+                    # Store in rate log. AV FX_DAILY is mid-market close, not
+                    # true ask, but per PEAS convention historical backfill
+                    # is logged as Ask Rate (the gap is acknowledged in
+                    # CLAUDE.md). Spot is reserved for manual negotiated entries.
                     if settings.store_historical_data:
                         store_rate_log(
                             from_currency=from_currency,
                             to_currency=to_currency,
                             rate_date=date_str,
-                            rate_type="Spot",
+                            rate_type="Ask Rate",
                             exchange_rate=close_rate,
                             open_rate=values.get("open"),
                             high_rate=values.get("high"),
                             low_rate=values.get("low"),
                             close_rate=values.get("close"),
                         )
+                        if settings.create_bidirectional_rates and close_rate > 0:
+                            store_rate_log(
+                                from_currency=to_currency,
+                                to_currency=from_currency,
+                                rate_date=date_str,
+                                rate_type="Ask Rate",
+                                exchange_rate=1.0 / close_rate,
+                            )
 
                     days_processed += 1
 
@@ -926,6 +961,14 @@ def backfill_month_rates(month_date, client, enabled_pairs, settings):
                     rate_type="Closing",
                     exchange_rate=closing_rate,
                 )
+                if settings.create_bidirectional_rates and closing_rate > 0:
+                    store_rate_log(
+                        from_currency=to_currency,
+                        to_currency=from_currency,
+                        rate_date=month_end_str,
+                        rate_type="Closing",
+                        exchange_rate=1.0 / closing_rate,
+                    )
 
             # Calculate and store average
             closes = [r["close"] for r in month_rates if r["close"] > 0]
@@ -940,6 +983,14 @@ def backfill_month_rates(month_date, client, enabled_pairs, settings):
                         rate_type="Monthly Average",
                         exchange_rate=avg_rate,
                     )
+                    if settings.create_bidirectional_rates and avg_rate > 0:
+                        store_rate_log(
+                            from_currency=to_currency,
+                            to_currency=from_currency,
+                            rate_date=month_end_str,
+                            rate_type="Monthly Average",
+                            exchange_rate=1.0 / avg_rate,
+                        )
 
             frappe.db.commit()
 
