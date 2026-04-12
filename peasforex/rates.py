@@ -72,22 +72,17 @@ ADAPTERS = {
 # ---------------------------------------------------------------------------
 
 def apply(doc, method=None):
-    """before_validate hook: populate rate fields per the doc's source choice."""
+    """before_validate hook: populate rate fields per the doc's source choice.
+
+    Source field placement differs by doctype:
+      - PI / PE / Employee Advance: parent-level `custom_forex_rate_source`
+        applies uniformly to every slot.
+      - Journal Entry: per-row `custom_forex_rate_source` on each
+        Journal Entry Account, read and stamped independently per row.
+    Applied date is always at parent level.
+    """
     adapter = ADAPTERS.get(doc.doctype)
     if not adapter:
-        return
-
-    source = doc.get("custom_forex_rate_source") or "Auto"
-
-    # Inherited: handled client-side by the EC V3 script populating rates
-    # from the linked Employee Advance. Server stays out of the way.
-    if source == "Inherited":
-        return
-
-    # Manual: respect user-typed rates; record them as Spot in FRL so the
-    # same pair+date is reusable within the day.
-    if source == "Manual":
-        _log_manual_rates_as_spot(doc, adapter)
         return
 
     as_of = doc.get("custom_forex_rate_applied_date") \
@@ -99,8 +94,21 @@ def apply(doc, method=None):
     if not to_currency:
         return
 
-    # Track the actually-used source when Auto is picked so we can stamp it
-    # back as "Spot" or "Ask Rate" (not the literal word "Auto").
+    # JE: per-row source. Each accounts[] row resolves independently.
+    if doc.doctype == "Journal Entry":
+        _apply_je_per_row(doc, adapter, to_currency, as_of)
+        return
+
+    # Everyone else: one parent-level source applies to all slots.
+    source = doc.get("custom_forex_rate_source") or "Auto"
+
+    if source == "Inherited":
+        return
+
+    if source == "Manual":
+        _log_manual_rates_as_spot(doc, adapter)
+        return
+
     resolved_source = None
 
     for slot in adapter["slots"]:
@@ -118,6 +126,54 @@ def apply(doc, method=None):
 
     if source == "Auto" and resolved_source:
         doc.custom_forex_rate_source = resolved_source
+
+
+def _apply_je_per_row(doc, adapter, to_currency, as_of):
+    """JE source lives on each Journal Entry Account row. Populate
+    exchange_rate per row, stamp source per row, and also compute
+    base-currency debit/credit so ERPNext's validate ('Both Debit and
+    Credit values cannot be zero') sees consistent numbers."""
+    slot = adapter["slots"][0]  # JE has one slot: the accounts child table
+    table = slot["table"]
+
+    for row in doc.get(table) or []:
+        from_currency = row.get(slot["from_field"])
+        if not from_currency or from_currency == to_currency:
+            # Same-currency row: rate is 1, no lookup needed. Leave source
+            # alone; if user picked Auto it stays Auto and is harmless.
+            continue
+
+        source = row.get("custom_forex_rate_source") or "Auto"
+
+        if source == "Inherited":
+            # Programmatic callers (EC settlement, revaluation) fill the
+            # rate themselves; don't touch.
+            continue
+
+        if source == "Manual":
+            _log_one_spot(row, slot, to_currency, as_of)
+            _recompute_je_row_base(row, row.get(slot["rate_field"]))
+            continue
+
+        rate, actual_source, _ = resolve(from_currency, to_currency, as_of, source)
+        if rate is not None:
+            row.set(slot["rate_field"], rate)
+            _recompute_je_row_base(row, rate)
+        if source == "Auto" and actual_source:
+            row.set("custom_forex_rate_source", actual_source)
+
+
+def _recompute_je_row_base(row, rate):
+    """Set base-currency debit/credit from account-currency values, so
+    the row is internally consistent when ERPNext's validate runs."""
+    if not rate:
+        return
+    dr_ac = row.get("debit_in_account_currency") or 0
+    cr_ac = row.get("credit_in_account_currency") or 0
+    if dr_ac:
+        row.set("debit", dr_ac * rate)
+    if cr_ac:
+        row.set("credit", cr_ac * rate)
 
 
 def _resolve_and_set(obj, slot, to_currency, as_of, source):
