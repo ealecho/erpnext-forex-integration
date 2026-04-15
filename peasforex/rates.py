@@ -130,6 +130,12 @@ def apply(doc, method=None):
     if source == "Auto" and resolved_source:
         doc.custom_forex_rate_source = resolved_source
 
+    # Stamp the date the rate was looked up so auditors can re-derive the
+    # exact resolver decision later. Only set on docs that actually had a
+    # rate resolved this pass — leaves single-currency docs untouched.
+    if resolved_source and not doc.get("custom_forex_rate_applied_date"):
+        doc.custom_forex_rate_applied_date = as_of
+
 
 def _apply_je_per_row(doc, adapter, to_currency, as_of):
     """JE source lives on each Journal Entry Account row. Populate
