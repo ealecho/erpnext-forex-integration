@@ -38,6 +38,9 @@ ADAPTERS = {
     "Purchase Invoice": {
         "slots": [{"from_field": "currency", "rate_field": "conversion_rate"}],
     },
+    "Sales Invoice": {
+        "slots": [{"from_field": "currency", "rate_field": "conversion_rate"}],
+    },
     "Payment Entry": {
         "slots": [
             {"from_field": "paid_from_account_currency", "rate_field": "source_exchange_rate"},

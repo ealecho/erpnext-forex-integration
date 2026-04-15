@@ -57,6 +57,9 @@ doc_events = {
     "Purchase Invoice": {
         "before_validate": "peasforex.rates.apply"
     },
+    "Sales Invoice": {
+        "before_validate": "peasforex.rates.apply"
+    },
     "Employee Advance": {
         "before_validate": "peasforex.rates.apply"
     },
