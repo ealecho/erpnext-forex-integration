@@ -105,6 +105,14 @@ def apply(doc, method=None):
     # Everyone else: one parent-level source applies to all slots.
     source = doc.get("custom_forex_rate_source") or "Auto"
 
+    # PEAS policy: at advance-request time the actual rate is unknown,
+    # so a Spot or back-dated rate makes no sense. Force Ask Rate +
+    # use-today regardless of what was saved on the doc. (PE and EC
+    # keep full Spot/Ask/Manual + as-of-date flexibility.)
+    if doc.doctype == "Employee Advance":
+        source = "Ask Rate"
+        as_of = doc.get("posting_date") or nowdate()
+
     if source == "Inherited":
         return
 
