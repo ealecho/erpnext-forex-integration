@@ -17,7 +17,13 @@ app_include_js = "/assets/peasforex/js/peasforex.js"
 
 # DocType JS
 doctype_js = {
-    "Currency Exchange": "peasforex/public/js/currency_exchange.js"
+    "Currency Exchange": "peasforex/public/js/currency_exchange.js",
+    # Live forex rate resolution - populates the native rate field client-side
+    # so users aren't blocked by the mandatory check while picking a source.
+    "Employee Advance": "peasforex/public/js/employee_advance.js",
+    "Petty Cash Request": "peasforex/public/js/petty_cash_request.js",
+    "Payment Entry": "peasforex/public/js/payment_entry.js",
+    "Journal Entry": "peasforex/public/js/journal_entry.js",
 }
 
 # Fixtures - export these doctypes with the app
@@ -61,7 +67,13 @@ doc_events = {
         "before_validate": "peasforex.rates.apply"
     },
     "Employee Advance": {
-        "before_validate": "peasforex.rates.apply"
+        "before_validate": [
+            "peasforex.breakdown.default_breakdown_currency",
+            "peasforex.rates.apply",
+        ]
+    },
+    "Petty Cash Request": {
+        "before_validate": "peasforex.breakdown.default_breakdown_currency"
     },
     "Payment Entry": {
         "before_validate": "peasforex.rates.apply"
@@ -69,11 +81,11 @@ doc_events = {
     "Journal Entry": {
         "before_validate": "peasforex.rates.apply"
     },
-    # NOTE: "Accountability" hook is intentionally not registered - the
-    # distribution_csf app that owns it isn't installed on every PEAS site.
-    # Re-enable here (and restore custom_field fixture entries) when
-    # distribution_csf is present. The rates.py ADAPTERS entry stays so
-    # the resolver works once the hook is wired.
+    # Expense Claim (displayed as "Accountability" in the PEAS UI when
+    # custom_claim_type = "Advance Accountability") is handled entirely
+    # by peas_hr's "Expense Claim Scripts V3" client script: per-row
+    # currency inheritance from parent.custom_currency, and per-row rate
+    # lookup via peasforex.rates.resolve_whitelisted. No server hook here.
 }
 
 # Jinja Environment

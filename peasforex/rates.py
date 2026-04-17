@@ -61,12 +61,11 @@ ADAPTERS = {
             "only_if": lambda d: bool(d.get("custom_is_multicurrency")),
         }],
     },
-    "Accountability": {
-        "slots": [
-            {"from_field": "custom_currency", "rate_field": "custom_exchange_rate"},
-            # Child slot added once Expense Breakdown schema prep lands.
-        ],
-    },
+    # Expense Claim (labelled "Accountability" in the PEAS UI via
+    # custom_claim_type = "Advance Accountability") is NOT in this registry:
+    # peas_hr's "Expense Claim Scripts V3" client script owns row-currency
+    # + per-row rate resolution there, calling peasforex.rates.resolve_whitelisted
+    # directly. Adding a server-side adapter would double-handle the rate.
 }
 
 
@@ -252,11 +251,20 @@ def resolve(from_currency, to_currency, as_of_date, source="Auto"):
 
 
 def _lookup_frl(from_currency, to_currency, as_of_date, rate_type):
-    rows = frappe.db.sql("""
+    # Spot is a negotiated bank rate for a specific transaction day — it
+    # never carries forward (yesterday's Spot is meaningless for today's
+    # transaction). Require exact date match.
+    # Ask Rate / Central Bank Rate are reference rates — they carry forward
+    # if today's hasn't synced yet, so use <= for those.
+    if rate_type == "Spot":
+        date_clause = "rate_date = %s"
+    else:
+        date_clause = "rate_date <= %s"
+    rows = frappe.db.sql(f"""
         SELECT exchange_rate, rate_date
         FROM `tabForex Rate Log`
         WHERE from_currency = %s AND to_currency = %s
-          AND rate_type = %s AND rate_date <= %s
+          AND rate_type = %s AND {date_clause}
         ORDER BY rate_date DESC LIMIT 1
     """, (from_currency, to_currency, rate_type, as_of_date), as_dict=True)
     return rows[0] if rows else None

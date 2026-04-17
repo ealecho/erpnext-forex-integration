@@ -1,2 +1,3 @@
 peasforex.patches.remove_prudency_high_low_records
 peasforex.patches.remove_peas_internal_prudency_records
+peasforex.patches.clear_legacy_av_spot_rows
