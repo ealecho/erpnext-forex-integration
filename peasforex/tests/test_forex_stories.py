@@ -1377,6 +1377,7 @@ def story_20_ec_advance_inheritance(page: Page, ctx: dict):
         "advance_account": "Employee Advances - UG",
         "custom_advance_type": "Float/Travel/Other",
         "custom_funds_required_by_date": tomorrow,
+        "custom_expense_approver": "linemanager1.ict.ug@peas.test",
         "custom_expenses": [{
             "doctype": "Expense Breakdown",
             "description": "peasforex inheritance test",
@@ -1384,6 +1385,7 @@ def story_20_ec_advance_inheritance(page: Page, ctx: dict):
             "custom_currency": "USD",
             "custom_exchange_rate": seed_rate,
             "custom_amount_in_base_currency": round(100 * seed_rate, 2),
+            "budget_code": "PEAS-ICT-01",
         }],
         # No custom_forex_rate_source — peas_hr forces it to Ask Rate.
     })
@@ -1975,7 +1977,7 @@ def story_25_ec_credit_card(page: Page, ctx: dict):
 # ---------------------------------------------------------------------------
 
 UG_OFFICER = "contributor.ict.ug@peas.test"
-UG_OFFICER_EMP = "UG-1071"
+UG_OFFICER_EMP = "UG-0009"
 UG_FINANCE = "finance.officer.ug@peas.test"
 
 
@@ -2056,6 +2058,7 @@ def story_26_ug_ea_gbp_multiline(page: Page, ctx: dict):
         "custom_currency": "GBP",
         "custom_exchange_rate": expected_rate,
         "custom_amount_in_base_currency": round(amt * expected_rate, 2),
+        "budget_code": "PEAS-ICT-01",
     } for etype, desc, amt in rows_gbp]
     total_gbp = sum(a for _, _, a in rows_gbp)
     total_ugx = round(total_gbp * expected_rate, 2)
@@ -2074,6 +2077,7 @@ def story_26_ug_ea_gbp_multiline(page: Page, ctx: dict):
         "advance_account": "Employee Advances - UG",
         "custom_advance_type": "Float/Travel/Other",
         "custom_funds_required_by_date": funds_by,
+        "custom_expense_approver": "linemanager1.ict.ug@peas.test",
         "custom_expenses": custom_expenses,
         # No source set - resolver's EA branch forces it to Ask Rate.
     })
