@@ -8,26 +8,89 @@ Transaction doctypes opt in via hooks.py doc_events:
     "Purchase Invoice": {"before_validate": "peasforex.rates.apply"}
 
 Each opted-in doctype has two PEAS custom fields:
-    custom_forex_rate_source       Select (Auto / Ask Rate / Spot /
+    custom_forex_rate_source       Select (Live Rate / Spot /
                                            Central Bank Rate / Manual / Inherited)
     custom_forex_rate_applied_date Date  (defaults to the doc's posting_date)
 
 Resolution rules:
-- Auto: try Spot for the applied date, else Ask Rate. Throws if neither.
-- Spot / Ask Rate / Central Bank Rate: force that source, throw if missing.
-- Manual: preserve the user-typed value; auto-log as Spot in Forex Rate Log
-  so the same rate is reusable within the day (per CLAUDE.md).
+- Live Rate: look up Ask Rate in Forex Rate Log (carries forward if today's
+  hasn't synced yet), fallback to Currency Exchange. Throws if neither.
+- Spot / Central Bank Rate: force that source, throw if missing in FRL.
+- Manual: preserve the user-typed value. Nothing is logged to FRL.
 - Inherited: server is a no-op. EC V3 client script handles inheritance from
   the linked Employee Advance's custom_advance_exchange_rate.
+- Auto (internal): try Spot, else Live Rate. Not a visible UI option; used
+  server-side as the default when no source is recorded.
+
+"Live Rate" is the user-facing label for what is stored internally as
+"Ask Rate" in Forex Rate Log. The boundary functions (_to_internal /
+_to_display) translate at the API surface; resolve() uses "Ask Rate"
+throughout and never sees "Live Rate".
 
 After Auto resolves, custom_forex_rate_source is rewritten to the actual
-source used ("Spot" or "Ask Rate") so the saved document carries an honest
-audit trail - not the literal word "Auto".
+source used ("Spot" or "Live Rate") so the saved document carries an honest
+audit trail.
 """
 
 import frappe
 from frappe import _
 from frappe.utils import nowdate
+
+
+# ---------------------------------------------------------------------------
+# "Live Rate" ↔ "Ask Rate" translation
+# "Ask Rate" is the internal FRL rate_type. "Live Rate" is what users see.
+# All code outside this file uses "Live Rate"; resolve() uses "Ask Rate".
+# ---------------------------------------------------------------------------
+
+def _to_internal(source):
+    return "Ask Rate" if source == "Live Rate" else source
+
+
+def _to_display(source):
+    return "Live Rate" if source == "Ask Rate" else source
+
+
+# ---------------------------------------------------------------------------
+# Client-callable: save a user-declared Spot or Central Bank Rate to FRL
+# ---------------------------------------------------------------------------
+
+@frappe.whitelist()
+def save_rate_to_frl(from_currency, to_currency, rate_date, rate_type, exchange_rate):
+    """Save an explicitly declared Spot or Central Bank Rate to Forex Rate Log.
+
+    Called from client scripts when the user selects Spot or Central Bank Rate
+    as source, no FRL entry exists for that date, and the user enters the rate
+    manually. Saving here means the same rate is available for subsequent
+    lookups on the same date (e.g. other PEs or JEs that day).
+    """
+    frappe.has_permission("Forex Rate Log", "write", throw=True)
+    rate_type_internal = _to_internal(rate_type)
+    if rate_type_internal not in ("Spot", "Central Bank Rate"):
+        frappe.throw(_("Only Spot and Central Bank Rate can be saved to Forex Rate Log via this method."))
+
+    existing = frappe.db.exists("Forex Rate Log", {
+        "from_currency": from_currency,
+        "to_currency": to_currency,
+        "rate_date": rate_date,
+        "rate_type": rate_type_internal,
+    })
+    if existing:
+        return {"name": existing, "status": "exists"}
+
+    frl = frappe.new_doc("Forex Rate Log")
+    frl.update({
+        "from_currency": from_currency,
+        "to_currency": to_currency,
+        "rate_date": rate_date,
+        "rate_type": rate_type_internal,
+        "exchange_rate": float(exchange_rate),
+        "source": "Manual",
+    })
+    frl.flags.ignore_permissions = True
+    frl.insert()
+    frappe.db.commit()
+    return {"name": frl.name, "status": "created"}
 
 
 # Per-doctype field mappings. A "slot" is one (currency_field, rate_field) pair.
@@ -102,7 +165,7 @@ def apply(doc, method=None):
         return
 
     # Everyone else: one parent-level source applies to all slots.
-    source = doc.get("custom_forex_rate_source") or "Auto"
+    source = _to_internal(doc.get("custom_forex_rate_source") or "Auto")
 
     # PEAS policy: at advance-request time the actual rate is unknown,
     # so a Spot or back-dated rate makes no sense. Force Ask Rate +
@@ -112,11 +175,7 @@ def apply(doc, method=None):
         source = "Ask Rate"
         as_of = doc.get("posting_date") or nowdate()
 
-    if source == "Inherited":
-        return
-
-    if source == "Manual":
-        _log_manual_rates_as_spot(doc, adapter)
+    if source in ("Inherited", "Manual"):
         return
 
     resolved_source = None
@@ -135,7 +194,7 @@ def apply(doc, method=None):
                 resolved_source = used
 
     if source == "Auto" and resolved_source:
-        doc.custom_forex_rate_source = resolved_source
+        doc.custom_forex_rate_source = _to_display(resolved_source)
 
     # Stamp the date the rate was looked up so auditors can re-derive the
     # exact resolver decision later. Only set on docs that actually had a
@@ -159,7 +218,7 @@ def _apply_je_per_row(doc, adapter, to_currency, as_of):
             # alone; if user picked Auto it stays Auto and is harmless.
             continue
 
-        source = row.get("custom_forex_rate_source") or "Auto"
+        source = _to_internal(row.get("custom_forex_rate_source") or "Auto")
 
         if source == "Inherited":
             # Programmatic callers (EC settlement, revaluation) fill the
@@ -167,7 +226,6 @@ def _apply_je_per_row(doc, adapter, to_currency, as_of):
             continue
 
         if source == "Manual":
-            _log_one_spot(row, slot, to_currency, as_of)
             _recompute_je_row_base(row, row.get(slot["rate_field"]))
             continue
 
@@ -176,7 +234,7 @@ def _apply_je_per_row(doc, adapter, to_currency, as_of):
             row.set(slot["rate_field"], rate)
             _recompute_je_row_base(row, rate)
         if source == "Auto" and actual_source:
-            row.set("custom_forex_rate_source", actual_source)
+            row.set("custom_forex_rate_source", _to_display(actual_source))
 
 
 def _recompute_je_row_base(row, rate):
@@ -208,9 +266,19 @@ def _resolve_and_set(obj, slot, to_currency, as_of, source):
 
 @frappe.whitelist()
 def resolve_whitelisted(from_currency, to_currency, as_of_date, source="Auto"):
-    """Whitelisted wrapper for client-side calls (EC V3 script)."""
-    rate, actual_source, rate_date = resolve(from_currency, to_currency, as_of_date, source)
-    return {"rate": rate, "source": actual_source, "rate_date": str(rate_date) if rate_date else None}
+    """Whitelisted wrapper for client-side calls.
+
+    Accepts "Live Rate" as source (user-facing label) and returns "Live Rate"
+    in the response. Internally delegates to resolve() which uses "Ask Rate".
+    """
+    rate, actual_source, rate_date = resolve(
+        from_currency, to_currency, as_of_date, _to_internal(source)
+    )
+    return {
+        "rate": rate,
+        "source": _to_display(actual_source),
+        "rate_date": str(rate_date) if rate_date else None,
+    }
 
 
 def resolve(from_currency, to_currency, as_of_date, source="Auto"):
@@ -279,49 +347,3 @@ def _lookup_ce(from_currency, to_currency, as_of_date):
     )
 
 
-# ---------------------------------------------------------------------------
-# Manual override → log as Spot in FRL for reuse within the day
-# ---------------------------------------------------------------------------
-
-def _log_manual_rates_as_spot(doc, adapter):
-    as_of = doc.get("custom_forex_rate_applied_date") \
-            or doc.get("posting_date") or nowdate()
-    company = doc.get("company")
-    if not company:
-        return
-    to_currency = frappe.get_cached_value("Company", company, "default_currency")
-    if not to_currency:
-        return
-
-    for slot in adapter["slots"]:
-        if "only_if" in slot and not slot["only_if"](doc):
-            continue
-        if "table" in slot:
-            for row in doc.get(slot["table"]) or []:
-                _log_one_spot(row, slot, to_currency, as_of)
-        else:
-            _log_one_spot(doc, slot, to_currency, as_of)
-
-
-def _log_one_spot(obj, slot, to_currency, as_of):
-    from_currency = obj.get(slot["from_field"])
-    rate = obj.get(slot["rate_field"])
-    if not from_currency or from_currency == to_currency or not rate:
-        return
-    existing = frappe.db.exists("Forex Rate Log", {
-        "from_currency": from_currency, "to_currency": to_currency,
-        "rate_date": as_of, "rate_type": "Spot",
-    })
-    if existing:
-        return
-    try:
-        frl = frappe.new_doc("Forex Rate Log")
-        frl.update({
-            "from_currency": from_currency, "to_currency": to_currency,
-            "rate_date": as_of, "rate_type": "Spot",
-            "exchange_rate": rate, "source": "Manual",
-        })
-        frl.flags.ignore_permissions = True
-        frl.insert()
-    except Exception:
-        frappe.log_error(frappe.get_traceback(), "peasforex manual Spot log failed")

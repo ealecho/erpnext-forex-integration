@@ -4,7 +4,7 @@
 // Live rate resolution on Employee Advance.
 //
 // PEAS policy (mirrors peasforex.rates.apply): at advance-request time the
-// actual rate is unknown, so the server forces Ask Rate + posting_date
+// actual rate is unknown, so the server forces Live Rate + posting_date
 // regardless of what the user picked. We do the same here so the rate that
 // shows in the form is the rate that will save.
 
@@ -53,10 +53,10 @@ function resolve_advance_rate(frm) {
             frm.doc.custom_e_a_currency,
             company_currency,
             frm.doc.posting_date,
-            "Ask Rate",
+            "Live Rate",
             (res) => {
                 frm.set_value("custom_advance_exchange_rate", res.rate);
-                frm.set_value("custom_forex_rate_source", "Ask Rate");
+                frm.set_value("custom_forex_rate_source", "Live Rate");
                 frm.set_value("custom_forex_rate_applied_date", frm.doc.posting_date);
             }
         );
