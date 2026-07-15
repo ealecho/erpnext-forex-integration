@@ -70,6 +70,8 @@ doc_events = {
         "before_validate": [
             "peasforex.breakdown.default_breakdown_currency",
             "peasforex.rates.apply",
+            # After rates.apply: rows inherit the resolved advance rate.
+            "peasforex.breakdown.stamp_breakdown_rates",
         ]
     },
     "Petty Cash Request": {

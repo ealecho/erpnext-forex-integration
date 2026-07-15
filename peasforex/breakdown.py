@@ -66,6 +66,30 @@ def default_breakdown_currency(doc, method=None):
             row.custom_exchange_rate = 1
 
 
+def stamp_breakdown_rates(doc, method=None):
+    """Copy the resolved advance rate onto multi-currency breakdown rows.
+
+    Runs after peasforex.rates.apply in the Employee Advance
+    before_validate chain, so custom_advance_exchange_rate is already
+    resolved. Rows are locked to the parent rate by PEAS convention
+    (mirrors the "Employee Advance Scripts" client script grid lock) —
+    without this, rows persist at the 1.0 default and the client script's
+    refresh-time force-set dirties submitted docs.
+
+    before_validate only fires on save/submit (never update-after-submit),
+    so this cannot touch submitted documents.
+    """
+    if frappe.conf.get("peasforex_disable_hooks"):
+        return
+    if doc.doctype != "Employee Advance" or not doc.get("custom_is_multicurrency"):
+        return
+    rate = flt(doc.get("custom_advance_exchange_rate"))
+    if not rate:
+        return
+    for row in doc.get("custom_expenses") or []:
+        row.custom_exchange_rate = rate
+
+
 def _resolve_parent_currency(doc, currency_field, multi_field):
     if currency_field and multi_field and doc.get(multi_field) and doc.get(currency_field):
         return doc.get(currency_field)

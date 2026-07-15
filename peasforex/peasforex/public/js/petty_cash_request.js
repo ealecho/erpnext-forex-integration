@@ -10,6 +10,7 @@
 // currency the moment they add a row.
 
 function pcr_default_row_currency(frm, cdt, cdn) {
+    if (frm.doc.docstatus !== 0) return; // form_render fires on submitted docs too
     console.log("peasforex PCR: pcr_default_row_currency fired", cdt, cdn);
     let row = locals[cdt][cdn];
     peasforex.resolver.with_company_currency(frm, (cur) => {

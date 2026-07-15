@@ -23,6 +23,7 @@ frappe.ui.form.on("Payment Entry", {
 });
 
 function resolve_pe_rates(frm) {
+    if (frm.doc.docstatus !== 0) return; // never dirty a submitted doc
     const source = frm.doc.custom_forex_rate_source || "Auto";
     if (source === "Manual" || source === "Inherited") return;
 

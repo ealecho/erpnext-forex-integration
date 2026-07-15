@@ -45,6 +45,7 @@ frappe.ui.form.on("Expense Breakdown", {
 });
 
 function resolve_advance_rate(frm) {
+    if (frm.doc.docstatus !== 0) return; // never dirty a submitted doc
     if (!frm.doc.custom_is_multicurrency) return;
     if (!frm.doc.custom_e_a_currency || !frm.doc.posting_date) return;
 
@@ -74,6 +75,7 @@ function ea_parent_currency(frm, cb) {
 }
 
 function default_breakdown_row_currency(frm, cdt, cdn) {
+    if (frm.doc.docstatus !== 0) return; // form_render fires on submitted docs too
     console.log("peasforex EA: default_breakdown_row_currency fired", cdt, cdn);
     let row = locals[cdt][cdn];
     ea_parent_currency(frm, (cur) => {
@@ -88,6 +90,7 @@ function cascade_breakdown_currency(frm) {
     // Parent currency changed (multicurrency toggle, currency picker, or
     // company change). Refresh every breakdown row to match the new parent
     // currency, otherwise the user is left staring at stale GBP rows.
+    if (frm.doc.docstatus !== 0) return; // never dirty a submitted doc
     if (!(frm.doc.custom_expenses || []).length) return;
     ea_parent_currency(frm, (cur) => {
         if (!cur) return;

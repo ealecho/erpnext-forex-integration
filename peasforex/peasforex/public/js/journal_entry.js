@@ -28,6 +28,7 @@ function resolve_je_all_rows(frm) {
 }
 
 function resolve_je_row(frm, cdt, cdn) {
+    if (frm.doc.docstatus !== 0) return; // never dirty a submitted doc
     const row = locals[cdt][cdn];
     if (!row.account_currency) return;
 
