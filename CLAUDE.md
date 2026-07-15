@@ -129,7 +129,7 @@ Bidirectional
 | `peasforex/peasforex/report/exchange_rate_history/` | Rate history report |
 | `peasforex/peasforex/page/prudency_calculator/` | Sarah's grant prudency calculator |
 | `peasforex/tests/test_forex_ui.py` | Original 11-assertion UI test (kept as smoke test) |
-| `peasforex/tests/test_forex_stories.py` | 80-assertion user-story suite (22 stories) |
+| `peasforex/tests/test_forex_stories.py` | 120-assertion user-story suite (30 stories) |
 | `peasforex/tests/generate_report.py` | HTML report generator with embedded acceptance criteria + audit |
 | `peasforex/tests/report.html` | Generated report (regenerable via `--no-run` from cache) |
 | `docs/spot_ask_integration_plan.md` | **Current** implementation plan for remaining polish items |
@@ -209,7 +209,7 @@ preserve-on-success per `docs/spot_ask_integration_plan.md` W4.
 11 assertions. Kept as a short-running baseline. Covers: Ask Rate count
 for today, GBP→UGX CE=FRL integrity, PI conversion_rate auto-fill.
 
-### `test_forex_stories.py` — user-story suite (80 assertions, 22 stories)
+### `test_forex_stories.py` — user-story suite (120 assertions, 30 stories)
 
 | # | Actor | Story | Mode |
 |---|---|---|---|
@@ -235,8 +235,19 @@ for today, GBP→UGX CE=FRL integrity, PI conversion_rate auto-fill.
 | 20 | Robert | EC inherits rate from linked Employee Advance | UI |
 | 21 | Robert | Payment Entry saves with resolved rate + source | UI |
 | 22 | Sibeti | Journal Entry multi-currency resolves per-row | Hybrid (see plan W3) |
+| 23 | Robert | Sales Invoice auto-populates rate | UI |
+| 24 | Sibeti | JE submit writes stamped rate to GL Entry | UI |
+| 25 | Robert | EC Company Card claim + multi-currency line | UI |
+| 26 | UG officer | GBP EA with 3 breakdown lines, resolver stamp | UI |
+| 27 | UG finance | PE books the GBP advance payout | UI |
+| 28 | UG officer | EC accountability settles the GBP advance | UI |
+| 29 | UG officer | Regression: EA breakdown rows inherit parent rate on save | UI |
+| 30 | UG finance | Regression: submitted EA not dirtied by client scripts; update-after-submit saves clean | UI |
 
-Expected result: **80 passed / 0 failed / 0 skipped**.
+Expected result: **120 passed / 0 failed / 0 skipped**. Runs against
+peas-dev (BASE_URL default `http://peas-dev.localhost:8020`). Note: the
+bench dev servers resolve the site from the process's FRAPPE_SITE env,
+NOT the Host header — :8020 is peas-dev, :8021 is peas-expense-test.
 
 Report file: `peasforex/tests/report.html`. Renders user-story narrative
 + Given/When/Then acceptance criteria + per-assertion results +

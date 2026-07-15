@@ -41,7 +41,7 @@ import datetime
 import subprocess
 from playwright.sync_api import sync_playwright, Page
 
-BASE  = os.environ.get("BASE_URL", "http://peas-test.localhost:8020")
+BASE  = os.environ.get("BASE_URL", "http://peas-dev.localhost:8020")
 
 # Default actor: a real PEAS programme officer. Per memory rule
 # `feedback_tests_use_staff_users.md` — Administrator bypasses User
@@ -79,12 +79,12 @@ STORY_ACTOR: dict[int, str] = {
     8:  "finance.manager.gl@peas.test",   # Sibeti: FS Rate Demo
     9:  ADMIN,                            # Story 9 IS the admin-access test
     10: "finance.manager.gl@peas.test",   # Karly: Sync log health
-    11: "finance.officer.ug@peas.test",   # Robert/UG Finance: Payment Entry
+    11: "finance.clerk.ug@peas.test",     # Robert/UG Finance: Payment Entry
     12: "finance.manager.gl@peas.test",   # Sibeti: JE accepts resolver
     # Story 14: Spot first-write + dedup contract. Same FRL perm gate.
     14: "finance.manager.ug@peas.test",
     16: "finance.manager.gl@peas.test",   # Sibeti: CB Rate isolation
-    21: "finance.officer.ug@peas.test",   # Robert: Payment Entry resolver
+    21: "finance.clerk.ug@peas.test",     # Robert: Payment Entry resolver
     22: "finance.manager.gl@peas.test",   # Sibeti: JE multi-currency
     24: "finance.manager.gl@peas.test",   # Sibeti: JE submit lifecycle
     # 26-28: Stories already login_as their UG actors explicitly.
@@ -1138,16 +1138,17 @@ def story_17_resolver_contract(page: Page, ctx: dict):
     r = call(FROM, FROM, TODAY, "Auto")
     log("Same currency returns rate 1.0", r.get("rate") == 1.0, str(r)[:80])
 
-    # Auto with no Spot today -> falls back to Ask Rate
+    # Auto with no Spot today -> falls back to Ask Rate ("Live Rate" at
+    # the API boundary since 77e89af)
     r = call(FROM, TO, TODAY, "Auto")
     log("Auto falls back Spot→Ask when no Spot for date",
-        r.get("source") == "Ask Rate" and r.get("rate", 0) > 100,
+        r.get("source") == "Live Rate" and r.get("rate", 0) > 100,
         f"source={r.get('source')} rate={r.get('rate')}")
 
-    # Explicit Ask Rate resolves
+    # Explicit Ask Rate resolves (echoed back as the display alias)
     r = call(FROM, TO, TODAY, "Ask Rate")
     log("Explicit Ask Rate resolves",
-        r.get("source") == "Ask Rate" and r.get("rate", 0) > 100,
+        r.get("source") == "Live Rate" and r.get("rate", 0) > 100,
         f"source={r.get('source')} rate={r.get('rate')}")
 
     # Explicit Spot with no Spot today -> throws
@@ -1210,34 +1211,48 @@ def story_18_ea_resolver(page: Page, ctx: dict):
             await sleep(600);
             await cur_frm.set_value('posting_date', {json.dumps(TODAY)});
             await cur_frm.set_value('purpose', 'peasforex test - resolver stamp');
-            await cur_frm.set_value('custom_advance_type', 'Float');
+            await cur_frm.set_value('custom_advance_type', 'Float/Travel/Other');
             await cur_frm.set_value('custom_funds_required_by_date', {json.dumps(tomorrow)});
             await cur_frm.set_value('custom_is_multicurrency', 1);
             await sleep(300);
             await cur_frm.set_value('custom_e_a_currency', 'USD');
             await cur_frm.set_value('custom_advance_amount_advance_currency', 100);
             await cur_frm.set_value('advance_account', 'Employee Advances - UG');
-            // Add required expense breakdown row
+            // Add required expense breakdown row. Clear any auto-added
+            // rows first (a client script seeds one from the advance
+            // amount) — same pattern as the JE stories' accounts reset.
+            cur_frm.doc.custom_expenses = [];
+            cur_frm.refresh_field('custom_expenses');
+            await sleep(200);
             const row = frappe.model.add_child(cur_frm.doc, 'custom_expenses');
             row.description = 'peasforex ui test';
-            row.amount = 100 * {expected_rate};
+            row.budget_code = 'PEAS-ICT-01';
+            // peas_hr compares SUM(row.amount) against the ADVANCE-CURRENCY
+            // amount on multicurrency EAs, so the breakdown is in USD.
+            row.amount = 100;
             cur_frm.refresh_field('custom_expenses');
             await sleep(400);
 
-            try {{
-                await cur_frm.save();
-            }} catch (e) {{
-                return {{error: String(e).slice(0, 200)}};
+            // Save via frappe.client.save (same payload cur_frm.save()
+            // sends) instead of cur_frm.save() — the post-save URL
+            // navigation destroys Playwright's evaluate context. Same
+            // pattern as Stories 22/24/26.
+            const fd = new FormData();
+            fd.append('doc', JSON.stringify(cur_frm.doc));
+            const r = await fetch('/api/method/frappe.client.save', {{
+                method: 'POST',
+                headers: {{'X-Frappe-CSRF-Token': frappe.csrf_token}},
+                body: fd,
+            }});
+            const j = await r.json();
+            if (!r.ok || !j.message || !j.message.name) {{
+                return {{error: (j._server_messages || j.exception || JSON.stringify(j)).toString().slice(0, 200)}};
             }}
-            // Wait for the doc to leave local state (has a name, islocal=0)
-            for (let i = 0; i < 20; i++) {{
-                if (cur_frm.doc && !cur_frm.doc.__islocal) break;
-                await sleep(200);
-            }}
+            const saved = j.message;
             return {{
-                name: cur_frm.doc.name,
-                rate: cur_frm.doc.custom_advance_exchange_rate,
-                source: cur_frm.doc.custom_forex_rate_source,
+                name: saved.name,
+                rate: saved.custom_advance_exchange_rate,
+                source: saved.custom_forex_rate_source,
             }};
         }}
     """)
@@ -1255,7 +1270,7 @@ def story_18_ea_resolver(page: Page, ctx: dict):
         rate > 100 and abs(rate - expected_rate) / expected_rate < 0.01,
         f"got {rate:.4f}, expected {expected_rate:.4f}")
     log("Forex Rate Source rewritten from 'Auto' to actual source",
-        source in ("Ask Rate", "Spot"),
+        source in ("Live Rate", "Spot"),
         f"source={source}")
 
 
@@ -1553,7 +1568,7 @@ def story_21_pe_resolver(page: Page, ctx: dict):
     log("Source Exchange Rate auto-populated to today's rate",
         rate > 100, f"got {rate:.4f}")
     log("Forex Rate Source rewritten from 'Auto' to actual source",
-        source in ("Ask Rate", "Spot"),
+        source in ("Live Rate", "Spot"),
         f"source={source}")
 
 
@@ -1566,12 +1581,12 @@ def story_21_pe_resolver(page: Page, ctx: dict):
 def story_22_je_resolver(page: Page, ctx: dict):
     """Sibeti books a multi-currency JE; per-row source stamped; JE balances.
 
-    Realistic user flow: Sibeti enters a GBP debit; the resolver picks
-    today's rate (Spot if a manual one exists, Ask otherwise); Sibeti
-    matches the UGX credit to that rate's base-currency equivalent; JE
-    balances cleanly. Per-row source is stamped from 'Auto' to the
-    actually-used source. JE `custom_forex_rate_source` lives on the
-    Journal Entry Account child, not the parent.
+    Realistic user flow: Sibeti enters a GBP debit; the row's source
+    defaults to 'Live Rate' (Auto was removed from the UI — it's internal
+    only), so the resolver fetches today's Live Rate; Sibeti matches the
+    UGX credit to that rate's base-currency equivalent; JE balances
+    cleanly. JE `custom_forex_rate_source` lives on the Journal Entry
+    Account child, not the parent.
     """
     print("\n[Story 22] Sibeti books a multi-currency JE - per-row rate + balance")
 
@@ -1580,14 +1595,14 @@ def story_22_je_resolver(page: Page, ctx: dict):
         return
 
     # Preview which rate the resolver will use for GBP->UGX today, so we
-    # can stage a balanced JE up-front. This mirrors the real user path
-    # (ERPNext's form fetches the rate from the backend on currency entry)
-    # without racing the client-side grid onchange.
+    # can stage a balanced JE up-front. Source must match the row default
+    # ('Live Rate') — an Auto preview could pick a Spot logged by an
+    # earlier story and stage an unbalanced credit.
     preview = page.evaluate(f"""
         async () => {{
             const r = await fetch('/api/method/peasforex.rates.resolve_whitelisted'
                 + '?from_currency=GBP&to_currency=UGX'
-                + '&as_of_date={TODAY}&source=Auto');
+                + '&as_of_date={TODAY}&source=' + encodeURIComponent('Live Rate'));
             const j = await r.json();
             return j.message || {{}};
         }}
@@ -1699,7 +1714,7 @@ def story_22_je_resolver(page: Page, ctx: dict):
         rate > 100 and abs(rate - expected_rate) / expected_rate < 0.05,
         f"got {rate:.4f}, expected {expected_rate:.4f}")
     log("GBP row Forex Rate Source rewritten from 'Auto' to actual source",
-        row_source in ("Ask Rate", "Spot"),
+        row_source in ("Live Rate", "Spot"),
         f"row source={row_source}  (matches resolver preview={expected_source})")
     log("JE balances in company currency (total_debit == total_credit)",
         total_debit > 0 and abs(total_debit - total_credit) < 0.01,
@@ -1767,7 +1782,7 @@ def story_24_submit_lifecycle(page: Page, ctx: dict):
         async () => {{
             const r = await fetch('/api/method/peasforex.rates.resolve_whitelisted'
                 + '?from_currency=GBP&to_currency=UGX'
-                + '&as_of_date={TODAY}&source=Auto');
+                + '&as_of_date={TODAY}&source=' + encodeURIComponent('Live Rate'));
             const j = await r.json();
             return j.message || {{}};
         }}
@@ -1957,14 +1972,17 @@ def story_25_ec_credit_card(page: Page, ctx: dict):
     log("Company Card claim auto-sets is_paid=1",
         result.get("is_paid") == 1,
         f"is_paid={result.get('is_paid')}")
+    # MOP name is site data ("Credit Card" on staging, "CreditCard-UG-UGX"
+    # on peas-dev) — assert the kind, not the exact record name.
+    mop = result.get("mode_of_payment") or ""
     log("Company Card claim auto-sets Mode of Payment = Credit Card",
-        result.get("mode_of_payment") == "Credit Card",
-        f"MOP={result.get('mode_of_payment')}")
+        "credit" in mop.lower().replace(" ", ""),
+        f"MOP={mop}")
     rate = float(result.get("line_rate") or 0)
     log("USD line rate auto-populates via peasforex resolver",
         rate > 100, f"line rate={rate}")
-    log("Line source stamped (Auto rewritten to Ask Rate / Spot)",
-        result.get("line_source") in ("Ask Rate", "Spot"),
+    log("Line source stamped (Auto rewritten to Live Rate / Spot)",
+        result.get("line_source") in ("Live Rate", "Spot"),
         f"line source={result.get('line_source')}")
 
 
@@ -1977,8 +1995,8 @@ def story_25_ec_credit_card(page: Page, ctx: dict):
 # ---------------------------------------------------------------------------
 
 UG_OFFICER = "contributor.ict.ug@peas.test"
-UG_OFFICER_EMP = "UG-0009"
-UG_FINANCE = "finance.officer.ug@peas.test"
+UG_OFFICER_EMP = "TEST-UGA-CONTRIBUTOR-ICT-UG"
+UG_FINANCE = "finance.clerk.ug@peas.test"
 
 
 def _bench_force_submit(doctype: str, name: str,
@@ -2001,6 +2019,21 @@ def _bench_force_submit(doctype: str, name: str,
     if extra_sets:
         sets.append(extra_sets)
     sql = f"UPDATE `{table}` SET {', '.join(sets)} WHERE name='{name}';"
+    try:
+        out = subprocess.run(
+            ["bench", "--site", site, "mariadb", "-e", sql],
+            cwd="/workspace/development/frappe-bench",
+            capture_output=True, text=True, timeout=15,
+        )
+        return "" if out.returncode == 0 else (out.stderr[-400:] or "non-zero exit")
+    except Exception as e:
+        return f"{type(e).__name__}: {e}"
+
+
+def _bench_sql(sql: str) -> str:
+    """Test-only: run raw SQL via bench mariadb (same bridge as
+    _bench_force_submit). Returns empty string on success."""
+    site = BASE.split("//", 1)[-1].split(":", 1)[0]
     try:
         out = subprocess.run(
             ["bench", "--site", site, "mariadb", "-e", sql],
@@ -2105,8 +2138,8 @@ def story_26_ug_ea_gbp_multiline(page: Page, ctx: dict):
     log("Resolver stamped today's GBP->UGX Ask Rate",
         got_rate > 100 and abs(got_rate - expected_rate) / expected_rate < 0.01,
         f"got {got_rate:.4f} expected {expected_rate:.4f}")
-    log("EA policy forces source to 'Ask Rate' (Spot/Manual disallowed)",
-        source == "Ask Rate", f"source={source}")
+    log("EA policy forces source to 'Live Rate' (Spot/Manual disallowed)",
+        source == "Live Rate", f"source={source}")
     log("EA applied date stamped to today", applied == TODAY,
         f"applied={applied}")
 
@@ -2229,7 +2262,7 @@ def story_27_ug_pe_for_ea(page: Page, ctx: dict):
     # Source is whichever the resolver picked today: Ask Rate by default,
     # Spot if an earlier story (e.g. Story 14) negotiated one for today.
     log("PE forex rate source stamped from Auto -> actual source",
-        source_stamp in ("Ask Rate", "Spot"), f"source={source_stamp}")
+        source_stamp in ("Live Rate", "Spot"), f"source={source_stamp}")
 
     # Force-submit the PE so Story 28 can allocate against the paid-out EA.
     ctx["ug_pe"] = pe["name"]
@@ -2284,7 +2317,7 @@ def story_28_ug_ec_accountability(page: Page, ctx: dict):
         "custom_original_currency": "GBP",
         "custom_original_amount": amt,
         "custom_exchange_rate": ea_rate,
-        "custom_forex_rate_source": "Ask Rate",
+        "custom_forex_rate_source": "Inherited",
         "amount": round(amt * ea_rate, 2),
         "sanctioned_amount": round(amt * ea_rate, 2),
     } for etype, desc, amt in lines_gbp]
@@ -2342,9 +2375,9 @@ def story_28_ug_ec_accountability(page: Page, ctx: dict):
         log("Every EC line inherits the EA's rate (advance settlement)",
             rates_match,
             f"rates={[float(r.get('custom_exchange_rate') or 0) for r in rows]}")
-        all_ask = all(r.get("custom_forex_rate_source") == "Ask Rate" for r in rows)
-        log("Every EC line stamped with 'Ask Rate' source",
-            all_ask,
+        all_inherited = all(r.get("custom_forex_rate_source") == "Inherited" for r in rows)
+        log("Every EC line stamped with 'Inherited' source (advance settlement)",
+            all_inherited,
             f"sources={[r.get('custom_forex_rate_source') for r in rows]}")
 
     # Back to Administrator so cleanup has the perms it expects.
@@ -2352,6 +2385,184 @@ def story_28_ug_ec_accountability(page: Page, ctx: dict):
         login(page)
     except Exception as e:
         print(f"  [WARN]  couldn't switch back to Administrator: {e}")
+
+
+# ---------------------------------------------------------------------------
+# STORY 29 - Regression: draft multicurrency EA rows inherit the parent rate
+# Guards the July 2026 fix: peasforex.breakdown.stamp_breakdown_rates copies
+# the resolved advance rate onto every Expense Breakdown row at save time,
+# so rows no longer persist at the 1.0 default while the parent carries the
+# real rate.
+# ---------------------------------------------------------------------------
+
+def story_29_ea_breakdown_rate_stamp(page: Page, ctx: dict):
+    print("\n[Story 29] Draft multicurrency EA - breakdown rows inherit parent rate")
+
+    if not ctx["sync_ran"]:
+        skip("EA breakdown rows stamped with parent rate", "no Ask Rates today")
+        return
+
+    nav(page, "employee-advance/new-employee-advance-1")
+    try:
+        await_form(page, timeout_ms=15000)
+    except Exception:
+        log("EA form loads for breakdown stamp test", False, "cur_frm not initialized")
+        return
+
+    funds_by = (datetime.date.today() + datetime.timedelta(days=7)).strftime("%Y-%m-%d")
+    result = page.evaluate(f"""
+        async () => {{
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+            await cur_frm.set_value('employee', {json.dumps(UG_OFFICER_EMP)});
+            await sleep(600);
+            await cur_frm.set_value('posting_date', {json.dumps(TODAY)});
+            await cur_frm.set_value('purpose', 'peasforex regression - row rate stamp');
+            await cur_frm.set_value('custom_advance_type', 'Float/Travel/Other');
+            await cur_frm.set_value('custom_funds_required_by_date', {json.dumps(funds_by)});
+            await cur_frm.set_value('custom_is_multicurrency', 1);
+            await sleep(300);
+            await cur_frm.set_value('custom_e_a_currency', 'GBP');
+            await cur_frm.set_value('custom_advance_amount_advance_currency', 100);
+            await sleep(800);   // client resolver fills the advance rate
+
+            // Clear any auto-added rows, then add one line in GBP (amounts
+            // are in advance currency on multicurrency EAs).
+            cur_frm.doc.custom_expenses = [];
+            cur_frm.refresh_field('custom_expenses');
+            await sleep(200);
+            const row = frappe.model.add_child(cur_frm.doc, 'custom_expenses');
+            row.description = 'peasforex regression row';
+            row.budget_code = 'PEAS-ICT-01';
+            row.amount = 100;
+            cur_frm.refresh_field('custom_expenses');
+            await sleep(400);
+
+            const fd = new FormData();
+            fd.append('doc', JSON.stringify(cur_frm.doc));
+            const r = await fetch('/api/method/frappe.client.save', {{
+                method: 'POST',
+                headers: {{'X-Frappe-CSRF-Token': frappe.csrf_token}},
+                body: fd,
+            }});
+            const j = await r.json();
+            if (!r.ok || !j.message || !j.message.name) {{
+                return {{error: (j._server_messages || j.exception || JSON.stringify(j)).toString().slice(0, 250)}};
+            }}
+            const saved = j.message;
+            return {{
+                name: saved.name,
+                parent_rate: saved.custom_advance_exchange_rate,
+                row_rates: (saved.custom_expenses || []).map(x => x.custom_exchange_rate),
+            }};
+        }}
+    """)
+    if result.get("error"):
+        log("Draft multicurrency EA saves via UI", False, result["error"])
+        return
+    name = result.get("name")
+    if name:
+        record_created(*("Employee Advance", name))
+    log("Draft multicurrency EA saves via UI", bool(name), name or "no name")
+
+    parent_rate = float(result.get("parent_rate") or 0)
+    row_rates = [float(r or 0) for r in result.get("row_rates") or []]
+    log("Breakdown row rate stamped = parent advance rate (not 1.0 default)",
+        parent_rate > 100 and bool(row_rates)
+        and all(abs(r - parent_rate) < 1e-6 for r in row_rates),
+        f"parent={parent_rate} rows={row_rates}")
+
+    ctx["regression_ea"] = name
+
+
+# ---------------------------------------------------------------------------
+# STORY 30 - Regression: opening a submitted EA must not dirty the form
+# Guards the July 2026 UpdateAfterSubmitError fix: client scripts used to
+# force-set breakdown currency/rate on refresh + form_render, so a submitted
+# EA whose stored row rate differed from the parent rate (legacy 1.0 rows)
+# was silently dirtied on open — and the next save/submit round-trip threw
+# 'Row #1: Not allowed to change Exchange Rate after submission'.
+# ---------------------------------------------------------------------------
+
+def story_30_submitted_ea_not_dirtied(page: Page, ctx: dict):
+    print("\n[Story 30] Submitted EA with legacy 1.0 row - form stays clean")
+
+    ea_name = ctx.get("regression_ea")
+    if not ea_name:
+        skip("Submitted EA not dirtied by client scripts", "Story 29 didn't produce an EA")
+        return
+
+    # Stage the exact legacy data shape that triggered the original crash:
+    # submitted EA whose stored row rate (1.0) differs from the parent rate.
+    err = _bench_force_submit("Employee Advance", ea_name, "Approved")
+    err2 = _bench_sql(
+        f"UPDATE `tabExpense Breakdown` SET custom_exchange_rate=1.0 "
+        f"WHERE parenttype='Employee Advance' AND parent='{ea_name}';")
+    if err or err2:
+        log("Legacy submitted-EA state staged", False, (err or err2)[:200])
+        return
+    log("Legacy submitted-EA state staged", True,
+        f"{ea_name} docstatus=1, row rate forced to 1.0")
+
+    nav(page, f"employee-advance/{ea_name}")
+    try:
+        await_form(page, timeout_ms=15000)
+    except Exception:
+        log("Submitted EA form loads", False, "cur_frm not initialized")
+        return
+
+    state = page.evaluate("""
+        async () => {
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+            await sleep(4000);   // let refresh/form_render/async handlers settle
+            return {
+                docstatus: cur_frm.doc.docstatus,
+                dirty: cur_frm.is_dirty(),
+                row_rates: (cur_frm.doc.custom_expenses || []).map(r => r.custom_exchange_rate),
+            };
+        }
+    """)
+    log("Submitted EA opens without being dirtied by client scripts",
+        state.get("docstatus") == 1 and not state.get("dirty"),
+        f"docstatus={state.get('docstatus')} dirty={state.get('dirty')}")
+    log("Stored row rate untouched in the form model",
+        bool(state.get("row_rates"))
+        and all(float(r or 0) == 1.0 for r in state.get("row_rates")),
+        f"row_rates={state.get('row_rates')}")
+
+    # The original crash was the next save round-trip (a finance user
+    # hitting Update / a workflow transition). Contributors lack write
+    # access on submitted Advance Requests, so run this leg as the UG
+    # finance manager — the realistic post-submit actor.
+    try:
+        login_as(page, "finance.manager.ug@peas.test")
+    except Exception as e:
+        log("Update-after-submit save succeeds (no UpdateAfterSubmitError)",
+            False, f"finance login failed: {str(e)[:120]}")
+        return
+    nav(page, f"employee-advance/{ea_name}")
+    try:
+        await_form(page, timeout_ms=15000)
+    except Exception:
+        log("Update-after-submit save succeeds (no UpdateAfterSubmitError)",
+            False, "form did not load for finance manager")
+        return
+    save = page.evaluate("""
+        async () => {
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+            await sleep(3000);   // let refresh/form_render handlers settle first
+            const fd = new FormData();
+            fd.append('doc', JSON.stringify(cur_frm.doc));
+            const r = await fetch('/api/method/frappe.client.save', {
+                method: 'POST',
+                headers: {'X-Frappe-CSRF-Token': frappe.csrf_token},
+                body: fd,
+            });
+            const j = await r.json();
+            return {ok: r.ok, err: (j._server_messages || j.exception || '').toString().slice(0, 200)};
+        }
+    """)
+    log("Update-after-submit save succeeds (no UpdateAfterSubmitError)",
+        bool(save.get("ok")), save.get("err") or "saved clean")
 
 
 # ---------------------------------------------------------------------------
@@ -2508,6 +2719,8 @@ def run():
             story_26_ug_ea_gbp_multiline,
             story_27_ug_pe_for_ea,
             story_28_ug_ec_accountability,
+            story_29_ea_breakdown_rate_stamp,
+            story_30_submitted_ea_not_dirtied,
         ]
 
         try:
