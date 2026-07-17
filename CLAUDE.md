@@ -139,8 +139,17 @@ was updated in April 2026 to (a) hard-lock row currency when parent is
 set, (b) filter advance picker to matching multi-currency EAs,
 (c) inherit rate from linked Employee Advance into all expense lines,
 (d) fall through to `peasforex.rates.resolve_whitelisted` when no
-advance is linked. Lives as a DB-stored Client Script, not in peas_hr
-source files yet.
+advance is linked.
+
+**IMPORTANT — Client Script ownership (July 2026):** "Expense Claim
+Scripts V3", "Employee Advance Scripts", "Payment Entry FX Rate" and
+friends are shipped in `peas_hr/fixtures/client_script.json` (+
+`install_data/`). They are NOT DB-only: any patch applied directly to a
+site's Client Script record is silently reverted by the next
+`bench migrate` / fixture sync. Fix them in the peas_hr fixture JSON.
+The `custom_forex_rate_source` Property Setters (default "Live Rate",
+"Auto" removed from UI options) also live in peas_hr fixtures, layered
+over peasforex's Custom Fields — "Auto" is server-internal only.
 
 ---
 ## Configured pairs (April 2026)
@@ -180,6 +189,16 @@ All reverse pairs auto-generated.
   using Closing and Monthly Average rates. Separate design round.
 - [ ] Per-company gating of rate logic — global toggles today; may need
   per-company rules (PEAS Global GBP-base may skip Spot entirely).
+- [ ] App-boundary migration (reviewed July 2026, decision pending):
+  peasforex keeps rate infrastructure + accounting doctypes (PI/SI/PE/JE);
+  HR consumers move to peas_hr — `breakdown.py` (merge into peas_hr
+  `expense_hooks.py`), EA/PCR doc_events entries, `employee_advance.js` +
+  `petty_cash_request.js`, EA/ECD forex Custom Fields; Expense Breakdown
+  Custom Fields become real doctype fields in peas_hr. peas_hr's
+  PI/SI/PE/JE Property Setters fold down into peasforex's custom_field
+  defaults (kills peas_hr's `rename_ask_rate_to_live_rate` patch). Audit
+  peas_hr's "Payment Entry FX Rate" fixture vs peasforex `payment_entry.js`
+  for duplicate resolver logic.
 - [ ] Deploy to `peasglobal.jh.frappe.cloud`.
 
 ---
