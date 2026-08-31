@@ -55,47 +55,6 @@ peasforex = {
     }
 };
 
-// Inject a "Rate Type" filter into the financial statement reports.
-// Report configs are assigned to frappe.query_reports[name] when the report
-// script loads, so trap the assignment and append our filter then.
-(function() {
-    const REPORTS = ["Balance Sheet", "Profit and Loss Statement", "Cash Flow"];
-    const RATE_TYPE_FILTER = {
-        fieldname: "rate_type",
-        label: __("Rate Type"),
-        fieldtype: "Select",
-        options: [
-            { value: "Closing", label: __("Closing Rate") },
-            { value: "Monthly Average", label: __("Average Rate") },
-            { value: "Manual", label: __("Manual Rate") },
-            { value: "Spot", label: __("Ask Rate (Spot)") },
-        ],
-        default: "Closing",
-    };
-
-    frappe.provide("frappe.query_reports");
-
-    REPORTS.forEach(function(name) {
-        let config;
-        Object.defineProperty(frappe.query_reports, name, {
-            configurable: true,
-            enumerable: true,
-            get() {
-                return config;
-            },
-            set(value) {
-                config = value;
-                const filters = config && config.filters;
-                // filters array is shared across the three reports, so guard
-                if (filters && !filters.some((f) => f.fieldname === "rate_type")) {
-                    const idx = filters.findIndex((f) => f.fieldname === "periodicity");
-                    filters.splice(idx >= 0 ? idx + 1 : filters.length, 0, RATE_TYPE_FILTER);
-                }
-            },
-        });
-    });
-})();
-
 // Add shortcut to navbar (optional)
 $(document).ready(function() {
     // Add any global initialization here

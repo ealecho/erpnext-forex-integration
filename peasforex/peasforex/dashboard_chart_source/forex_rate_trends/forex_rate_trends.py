@@ -12,6 +12,7 @@ MAJOR_CURRENCIES = ["USD", "EUR", "GBP", "DKK"]
 
 # Valid rate types for display
 VALID_RATE_TYPES = [
+    "Ask Rate",
     "Spot",
     "Closing",
     "Monthly Average",
@@ -49,10 +50,10 @@ def get_data(
     # Get currency group filter (default to African for better Y-axis scaling)
     currency_group = filters.get("currency_group", "African")
 
-    # Get rate type filter (default to Spot)
-    rate_type = filters.get("rate_type", "Spot")
+    # Get rate type filter (default to Ask Rate - the indicative rate used for transactions)
+    rate_type = filters.get("rate_type", "Ask Rate")
     if rate_type not in VALID_RATE_TYPES:
-        rate_type = "Spot"
+        rate_type = "Ask Rate"
 
     # Determine date range based on timespan
     if timespan == "Last Week":

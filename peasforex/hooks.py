@@ -17,7 +17,13 @@ app_include_js = "/assets/peasforex/js/peasforex.js"
 
 # DocType JS
 doctype_js = {
-    "Currency Exchange": "peasforex/public/js/currency_exchange.js"
+    "Currency Exchange": "peasforex/public/js/currency_exchange.js",
+    # Live forex rate resolution - populates the native rate field client-side
+    # so users aren't blocked by the mandatory check while picking a source.
+    "Employee Advance": "peasforex/public/js/employee_advance.js",
+    "Petty Cash Request": "peasforex/public/js/petty_cash_request.js",
+    "Payment Entry": "peasforex/public/js/payment_entry.js",
+    "Journal Entry": "peasforex/public/js/journal_entry.js",
 }
 
 # Fixtures - export these doctypes with the app
@@ -50,7 +56,38 @@ scheduler_events = {
 doc_events = {
     "Currency Exchange": {
         "before_save": "peasforex.api.currency_exchange.before_save"
-    }
+    },
+    # Forex rate resolution on transaction doctypes. Each hook populates the
+    # native rate field(s) based on custom_forex_rate_source + applied_date.
+    # See peasforex/rates.py for resolution semantics (Auto: Spot→Ask).
+    "Purchase Invoice": {
+        "before_validate": "peasforex.rates.apply"
+    },
+    "Sales Invoice": {
+        "before_validate": "peasforex.rates.apply"
+    },
+    "Employee Advance": {
+        "before_validate": [
+            "peasforex.breakdown.default_breakdown_currency",
+            "peasforex.rates.apply",
+            # After rates.apply: rows inherit the resolved advance rate.
+            "peasforex.breakdown.stamp_breakdown_rates",
+        ]
+    },
+    "Petty Cash Request": {
+        "before_validate": "peasforex.breakdown.default_breakdown_currency"
+    },
+    "Payment Entry": {
+        "before_validate": "peasforex.rates.apply"
+    },
+    "Journal Entry": {
+        "before_validate": "peasforex.rates.apply"
+    },
+    # Expense Claim (displayed as "Accountability" in the PEAS UI when
+    # custom_claim_type = "Advance Accountability") is handled entirely
+    # by peas_hr's "Expense Claim Scripts V3" client script: per-row
+    # currency inheritance from parent.custom_currency, and per-row rate
+    # lookup via peasforex.rates.resolve_whitelisted. No server hook here.
 }
 
 # Jinja Environment

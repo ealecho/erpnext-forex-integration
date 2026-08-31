@@ -60,7 +60,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Rate Type",
-     "options": "Spot\nClosing\nMonthly Average\nCentral Bank Rate",
+     "options": "Ask Rate\nSpot\nClosing\nMonthly Average\nCentral Bank Rate",
    "reqd": 1
   },
   {

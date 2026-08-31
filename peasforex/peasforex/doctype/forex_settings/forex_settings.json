@@ -122,7 +122,7 @@
    "fieldname": "rate_type_info",
    "fieldtype": "HTML",
    "label": "Rate Type Info",
-    "options": "<div class=\"alert alert-info\">\n<h5>Rate Types Explained</h5>\n<ul>\n<li><strong>Spot Rate (Daily):</strong> Current market exchange rate, synced daily</li>\n<li><strong>Closing Rate:</strong> Last trading day rate of the previous month, synced on 1st of each month</li>\n<li><strong>Monthly Average:</strong> Average rate for the previous month, calculated from daily rates</li>\n<li><strong>Central Bank Rate:</strong> Official central bank rate, entered manually for audit compliance</li>\n</ul>\n</div>"
+    "options": "<div class=\"alert alert-info\">\n<h5>Rate Types Explained</h5>\n<ul>\n<li><strong>Ask Rate (Daily):</strong> Indicative market exchange rate, synced daily from Alpha Vantage. Written to Currency Exchange and used for transaction conversion.</li>\n<li><strong>Spot Rate:</strong> Actual rate agreed with the bank at transaction time. <em>Manually entered</em> in Forex Rate Log only; never auto-synced.</li>\n<li><strong>Closing Rate:</strong> Last trading day rate of the previous month, synced on 1st of each month. Used for balance sheet consolidation.</li>\n<li><strong>Monthly Average:</strong> Average rate for the previous month, calculated from daily rates. Used for P&amp;L consolidation.</li>\n<li><strong>Central Bank Rate:</strong> Official central bank rate, entered manually for audit compliance.</li>\n</ul>\n</div>"
   },
   {
    "fieldname": "section_break_sync_status",

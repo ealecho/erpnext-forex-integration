@@ -1,0 +1,125 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "FSRD-.#####",
+ "creation": "2026-02-11 09:20:29.520565",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "period_start",
+  "period_end",
+  "col1",
+  "reporting_currency",
+  "sec_rates",
+  "bs_rate_type",
+  "col2",
+  "pl_rate_type",
+  "sec_output",
+  "rates_html"
+ ],
+ "fields": [
+  {
+   "default": "2025-05-01",
+   "fieldname": "period_start",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Period Start",
+   "reqd": 1
+  },
+  {
+   "default": "2025-10-31",
+   "fieldname": "period_end",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Period End",
+   "reqd": 1
+  },
+  {
+   "fieldname": "col1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "GBP",
+   "fieldname": "reporting_currency",
+   "fieldtype": "Link",
+   "label": "Reporting Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "sec_rates",
+   "fieldtype": "Section Break",
+   "label": "Rate Selection"
+  },
+  {
+   "default": "Closing",
+   "description": "Rate as of Period End Date",
+   "fieldname": "bs_rate_type",
+   "fieldtype": "Select",
+   "label": "Balance Sheet Rate",
+   "options": "Closing\nAsk Rate\nCentral Bank"
+  },
+  {
+   "fieldname": "col2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Monthly Average",
+   "description": "Period Average or End Date Rate",
+   "fieldname": "pl_rate_type",
+   "fieldtype": "Select",
+   "label": "P&L Rate",
+   "options": "Monthly Average\nClosing\nCentral Bank"
+  },
+  {
+   "fieldname": "sec_output",
+   "fieldtype": "Section Break",
+   "label": "Rates Output"
+  },
+  {
+   "fieldname": "rates_html",
+   "fieldtype": "HTML",
+   "label": "Rates"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-02-16 19:21:27.450954",
+ "modified_by": "Administrator",
+ "module": "Peasforex",
+ "name": "FS Rate Demo",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
