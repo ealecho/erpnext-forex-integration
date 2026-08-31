@@ -68,7 +68,7 @@ peasforex = {
             { value: "Closing", label: __("Closing Rate") },
             { value: "Monthly Average", label: __("Average Rate") },
             { value: "Manual", label: __("Manual Rate") },
-            { value: "Spot", label: __("Ask Rate (Spot)") },
+            { value: "Ask Rate", label: __("Ask Rate (Spot)") },
         ],
         default: "Closing",
     };
