@@ -53,7 +53,9 @@ def get_rate_as_at(date, from_currency, to_currency):
     from erpnext.setup.utils import get_exchange_rate
 
     rate_type = _requested_rate_type()
-    cache = frappe.local.__dict__.setdefault("peasforex_rate_cache", {})
+    cache = getattr(frappe.local, "peasforex_rate_cache", None)
+    if cache is None:
+        cache = frappe.local.peasforex_rate_cache = {}
     key = f"{from_currency}-{to_currency}@{date}|{rate_type}"
     if key not in cache:
         rate = None

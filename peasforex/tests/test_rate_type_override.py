@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import json
+import types
 from unittest.mock import patch
 
 from peasforex import overrides
@@ -33,8 +34,7 @@ def test_manual_skips_forex_rate_log():
         patch.object(overrides, "_requested_rate_type", return_value="Manual"),
         patch.object(overrides, "_get_logged_rate") as logged,
         patch("erpnext.setup.utils.get_exchange_rate", return_value=3700.0),
-        patch.object(overrides.frappe, "local"),
+        patch.object(overrides.frappe, "local", types.SimpleNamespace()),
     ):
-        overrides.frappe.local.__dict__ = {}
         assert overrides.get_rate_as_at("2026-08-31", "USD", "UGX") == 3700.0
         logged.assert_not_called()
