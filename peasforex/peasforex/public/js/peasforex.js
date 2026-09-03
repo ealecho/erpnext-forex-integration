@@ -59,7 +59,12 @@ peasforex = {
 // Report configs are assigned to frappe.query_reports[name] when the report
 // script loads, so trap the assignment and append our filter then.
 (function() {
-    const REPORTS = ["Balance Sheet", "Profit and Loss Statement", "Cash Flow"];
+    const REPORTS = [
+        "Balance Sheet",
+        "Profit and Loss Statement",
+        "Cash Flow",
+        "Consolidated Financial Statement",
+    ];
     const RATE_TYPE_FILTER = {
         fieldname: "rate_type",
         label: __("Rate Type"),
