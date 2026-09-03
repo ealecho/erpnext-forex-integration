@@ -112,14 +112,18 @@ peasforex = {
                 $box.remove();
                 return;
             }
-            const label = `${__("Applied Rates")} · ${__(msg.rate_type)} · ${frappe.datetime.str_to_user(msg.date)}`;
+            const label = `${__("Applied Rates")} · ${__(msg.rate_type)} · ${__("for period ending {0}", [frappe.datetime.str_to_user(msg.date)])}`;
             $box.empty().append(`<span class="text-muted small">${label}:</span>`);
             msg.rates.forEach((row) => {
+                let title = __("Source: {0}", [row.source]);
+                if (row.rate_date) {
+                    title += ` · ${__("rate dated {0}", [frappe.datetime.str_to_user(row.rate_date)])}`;
+                }
                 const pill = $(
                     `<span class="indicator-pill ${row.used_for_conversion ? "blue" : "gray"}"></span>`
                 )
                     .text(`1 ${row.from_currency} = ${format_rate(row.rate)} ${row.to_currency}`)
-                    .attr("title", __("Source: {0}", [row.source]));
+                    .attr("title", title);
                 $box.append(pill);
             });
         });
