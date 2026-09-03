@@ -65,7 +65,62 @@ def get_rate_as_at(date, from_currency, to_currency):
     return cache[key]
 
 
+_orig_cfs_execute = None
+
+UNCONVERTED_FIELD = "peasforex_unconverted"
+
+
+def cfs_execute(filters=None):
+    """Wrap the Consolidated Financial Statement to add an extra column:
+    the parent company's figures in its own base currency, untouched by
+    presentation-currency conversion."""
+    result = list(_orig_cfs_execute(filters))
+    company = filters.get("company") if filters else None
+    pres = filters.get("presentation_currency") if filters else None
+    if not (company and pres) or len(result) < 2 or not result[1]:
+        return tuple(result)
+
+    base = frappe.get_cached_value("Company", company, "default_currency")
+    columns, data = result[0], result[1]
+
+    if pres == base:
+        # conversion is identity for the parent; copy its column
+        raw_by_account = {row.get("account"): row.get(company) for row in data if row}
+    else:
+        # ponytail: full second execution without presentation currency;
+        # cache raw results if consolidated reports ever feel slow
+        raw_filters = frappe._dict(filters)
+        raw_filters.presentation_currency = None
+        raw_data = list(_orig_cfs_execute(raw_filters))[1] or []
+        raw_by_account = {row.get("account"): row.get(company) for row in raw_data if row}
+
+    idx = next((i for i, c in enumerate(columns) if c.get("fieldname") == company), len(columns) - 1)
+    columns.insert(idx + 1, {
+        "fieldname": UNCONVERTED_FIELD,
+        "label": f"{company} ({base}, Unconverted)",
+        "fieldtype": "Currency",
+        "width": 150,
+        "apply_currency_formatter": 1,
+        "company_name": company,
+    })
+    for row in data:
+        if row and row.get("account") in raw_by_account:
+            row[UNCONVERTED_FIELD] = raw_by_account[row.get("account")]
+    return tuple(result)
+
+
 def apply_patches():
+    global _orig_cfs_execute
+
     from erpnext.accounts.report import utils
 
     utils.get_rate_as_at = get_rate_as_at
+
+    from erpnext.accounts.report.consolidated_financial_statement import (
+        consolidated_financial_statement as cfs,
+    )
+
+    if not getattr(cfs.execute, "_peasforex_patched", False):
+        _orig_cfs_execute = cfs.execute
+        cfs_execute._peasforex_patched = True
+        cfs.execute = cfs_execute
