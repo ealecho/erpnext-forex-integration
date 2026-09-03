@@ -110,7 +110,7 @@ peasforex = {
         }
         frappe.call({
             method: "peasforex.api.display_rates.get_display_rates",
-            args: { filters: values },
+            args: { filters: values, report_name: report.report_name },
         }).then((r) => {
             const msg = r.message || {};
             if (!(msg.rates || []).length) {

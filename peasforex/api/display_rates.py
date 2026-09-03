@@ -39,7 +39,7 @@ def _logged_rate_with_date(rate_type, from_currency, to_currency, date):
 
 
 @frappe.whitelist()
-def get_display_rates(filters=None):
+def get_display_rates(filters=None, report_name=None):
     if isinstance(filters, str):
         filters = json.loads(filters or "{}")
     company = filters.get("company")
@@ -54,14 +54,34 @@ def get_display_rates(filters=None):
     date = date or today()
     rate_type = filters.get("rate_type") or "Closing"
 
+    # currencies the conversion actually runs through: the company's base
+    # currency - plus, for the consolidated report, every subsidiary's base
+    # currency (each subsidiary column converts base -> presentation)
+    companies = [company]
+    conversion_ccys = {base}
+    if report_name == "Consolidated Financial Statement":
+        from frappe.utils.nestedset import get_descendants_of
+
+        try:
+            companies += get_descendants_of("Company", company, ignore_permissions=True) or []
+        except Exception:
+            pass
+        conversion_ccys |= {
+            frappe.get_cached_value("Company", c, "default_currency") for c in companies
+        }
+
     account_ccys = frappe.get_all(
         "Account",
-        filters={"company": company, "is_group": 0, "disabled": 0},
+        filters={"company": ("in", companies), "is_group": 0, "disabled": 0},
         pluck="account_currency",
         distinct=True,
     )
-    # company currency first (it's the one conversion actually runs through)
-    ccys = [c for c in dict.fromkeys([base, *filter(None, account_ccys)]) if c != pres]
+    # conversion currencies first, then informational account currencies
+    ccys = [
+        c
+        for c in dict.fromkeys([base, *sorted(conversion_ccys - {base}), *filter(None, account_ccys)])
+        if c != pres
+    ]
 
     rates = []
     for ccy in ccys:
@@ -82,7 +102,7 @@ def get_display_rates(filters=None):
             "rate": flt(rate) or None,
             "rate_date": str(rate_date) if rate_date else None,
             "source": source,
-            "used_for_conversion": ccy == base,
+            "used_for_conversion": ccy in conversion_ccys,
         })
 
     return {"date": str(date), "rate_type": rate_type, "rates": rates}
