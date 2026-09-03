@@ -93,6 +93,16 @@ peasforex = {
             $box.remove();
             return;
         }
+        // create the container synchronously so two overlapping render
+        // passes can't each insert one (the strip showed up twice otherwise)
+        if (!$box.length) {
+            $box = $(
+                '<div class="peasforex-applied-rates" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:var(--padding-sm) var(--padding-md);border-bottom:1px solid var(--border-color);"></div>'
+            ).insertAfter($form);
+        } else if ($box.length > 1) {
+            $box.slice(1).remove();
+            $box = $box.first();
+        }
         frappe.call({
             method: "peasforex.api.display_rates.get_display_rates",
             args: { filters: values },
@@ -101,11 +111,6 @@ peasforex = {
             if (!(msg.rates || []).length) {
                 $box.remove();
                 return;
-            }
-            if (!$box.length) {
-                $box = $(
-                    '<div class="peasforex-applied-rates" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:var(--padding-sm) var(--padding-md);border-bottom:1px solid var(--border-color);"></div>'
-                ).insertAfter($form);
             }
             const label = `${__("Applied Rates")} · ${__(msg.rate_type)} · ${frappe.datetime.str_to_user(msg.date)}`;
             $box.empty().append(`<span class="text-muted small">${label}:</span>`);
