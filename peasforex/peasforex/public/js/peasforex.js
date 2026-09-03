@@ -75,6 +75,51 @@ peasforex = {
 
     frappe.provide("frappe.query_reports");
 
+    function format_rate(rate) {
+        if (rate == null) return __("n/a");
+        return rate >= 1 ? format_number(rate, null, 2) : rate.toFixed(6);
+    }
+
+    // "Applied Rates" strip between the filter form and the summary cards:
+    // one pill per account currency showing the exact rate used to express
+    // it in the presentation currency, per the selected Rate Type.
+    function render_applied_rates() {
+        const report = frappe.query_report;
+        if (!report || !report.page) return;
+        const $form = report.page.main.find(".page-form");
+        let $box = report.page.main.find(".peasforex-applied-rates");
+        const values = report.get_filter_values();
+        if (!values.presentation_currency) {
+            $box.remove();
+            return;
+        }
+        frappe.call({
+            method: "peasforex.api.display_rates.get_display_rates",
+            args: { filters: values },
+        }).then((r) => {
+            const msg = r.message || {};
+            if (!(msg.rates || []).length) {
+                $box.remove();
+                return;
+            }
+            if (!$box.length) {
+                $box = $(
+                    '<div class="peasforex-applied-rates" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:var(--padding-sm) var(--padding-md);border-bottom:1px solid var(--border-color);"></div>'
+                ).insertAfter($form);
+            }
+            const label = `${__("Applied Rates")} · ${__(msg.rate_type)} · ${frappe.datetime.str_to_user(msg.date)}`;
+            $box.empty().append(`<span class="text-muted small">${label}:</span>`);
+            msg.rates.forEach((row) => {
+                const pill = $(
+                    `<span class="indicator-pill ${row.used_for_conversion ? "blue" : "gray"}"></span>`
+                )
+                    .text(`1 ${row.from_currency} = ${format_rate(row.rate)} ${row.to_currency}`)
+                    .attr("title", __("Source: {0}", [row.source]));
+                $box.append(pill);
+            });
+        });
+    }
+
     REPORTS.forEach(function(name) {
         let config;
         Object.defineProperty(frappe.query_reports, name, {
@@ -90,6 +135,13 @@ peasforex = {
                 if (filters && !filters.some((f) => f.fieldname === "rate_type")) {
                     const idx = filters.findIndex((f) => f.fieldname === "periodicity");
                     filters.splice(idx >= 0 ? idx + 1 : filters.length, 0, RATE_TYPE_FILTER);
+                }
+                if (config) {
+                    const orig = config.after_datatable_render;
+                    config.after_datatable_render = function(datatable) {
+                        render_applied_rates();
+                        if (orig) orig.call(this, datatable);
+                    };
                 }
             },
         });
