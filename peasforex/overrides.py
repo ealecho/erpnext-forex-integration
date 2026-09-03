@@ -77,6 +77,13 @@ def cfs_execute(filters=None):
     result = list(_orig_cfs_execute(filters))
     company = filters.get("company") if filters else None
     pres = filters.get("presentation_currency") if filters else None
+
+    # widen currency columns so header labels aren't truncated
+    if result and result[0]:
+        for c in result[0]:
+            if c.get("fieldtype") == "Currency":
+                c["width"] = max(c.get("width") or 150, 40 + 8 * len(c.get("label") or ""))
+
     if not (company and pres) or len(result) < 2 or not result[1]:
         return tuple(result)
 
@@ -94,12 +101,13 @@ def cfs_execute(filters=None):
         raw_data = list(_orig_cfs_execute(raw_filters))[1] or []
         raw_by_account = {row.get("account"): row.get(company) for row in raw_data if row}
 
-    idx = next((i for i, c in enumerate(columns) if c.get("fieldname") == company), len(columns) - 1)
-    columns.insert(idx + 1, {
+    label = f"{company} ({base}, Unconverted)"
+    idx = next((i for i, c in enumerate(columns) if c.get("fieldname") == company), len(columns))
+    columns.insert(idx, {
         "fieldname": UNCONVERTED_FIELD,
-        "label": f"{company} ({base}, Unconverted)",
+        "label": label,
         "fieldtype": "Currency",
-        "width": 150,
+        "width": 40 + 8 * len(label),
         "apply_currency_formatter": 1,
         "company_name": company,
     })
