@@ -91,20 +91,19 @@ def cfs_execute(filters=None):
     base = frappe.get_cached_value("Company", company, "default_currency")
     columns, data = result[0], result[1]
 
-    if pres == base:
-        # conversion is identity for the parent; copy its column
-        raw_by_account = {row.get("account"): row.get(company) for row in data if row}
-    else:
-        # ponytail: full second execution without presentation currency;
-        # cache raw results if consolidated reports ever feel slow
-        raw_filters = frappe._dict(filters)
-        raw_filters.presentation_currency = None
-        raw_data = list(_orig_cfs_execute(raw_filters))[1] or []
-        raw_by_account = {row.get("account"): row.get(company) for row in raw_data if row}
+    # ponytail: full second execution; cache if consolidated reports feel slow.
+    # No presentation currency and no group accumulation: the column must
+    # always show the parent's OWN books in its own currency - never a sum,
+    # never converted - regardless of the report's checkboxes.
+    raw_filters = frappe._dict(filters)
+    raw_filters.presentation_currency = None
+    raw_filters.accumulated_in_group_company = 0
+    raw_data = list(_orig_cfs_execute(raw_filters))[1] or []
+    raw_by_account = {row.get("account"): row.get(company) for row in raw_data if row}
 
     label = f"{company} ({base}, Unconverted)"
-    idx = next((i for i, c in enumerate(columns) if c.get("fieldname") == company), len(columns))
-    columns.insert(idx, {
+    idx = next((i for i, c in enumerate(columns) if c.get("fieldname") == company), len(columns) - 1)
+    columns.insert(idx + 1, {
         "fieldname": UNCONVERTED_FIELD,
         "label": label,
         "fieldtype": "Currency",
