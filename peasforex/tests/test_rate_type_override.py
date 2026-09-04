@@ -29,6 +29,23 @@ def test_logged_rate_uses_inverse_pair():
     assert round(rate, 1) == 3703.7
 
 
+def test_err_rows_without_closing_rate_are_dropped():
+    rows = [
+        {"account": "A", "account_currency": "EUR", "new_exchange_rate": 0, "zero_balance": 0},
+        {"account": "B", "account_currency": "USD", "new_exchange_rate": 3700.0, "zero_balance": 0},
+        {"account": "C", "account_currency": "USD", "new_exchange_rate": 0, "zero_balance": 1},
+    ]
+    with (
+        patch.object(overrides, "_orig_get_accounts_data", return_value=rows),
+        patch.object(overrides.frappe, "msgprint") as msgprint,
+    ):
+        doc = types.SimpleNamespace(posting_date="2026-04-01")
+        kept = overrides.err_get_accounts_data(doc)
+    assert [r["account"] for r in kept] == ["B", "C"]  # zero-rate live row dropped, write-off row kept
+    msgprint.assert_called_once()
+    assert "EUR" in msgprint.call_args[0][0]
+
+
 def test_manual_skips_forex_rate_log():
     with (
         patch.object(overrides, "_requested_rate_type", return_value="Manual"),

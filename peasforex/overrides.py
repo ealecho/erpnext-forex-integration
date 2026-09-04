@@ -10,7 +10,8 @@ Currency Exchange lookup."""
 import json
 
 import frappe
-from frappe.utils import flt, getdate
+from frappe import _
+from frappe.utils import add_months, flt, get_last_day, getdate, today
 
 
 def _requested_rate_type():
@@ -117,8 +118,56 @@ def cfs_execute(filters=None):
     return tuple(result)
 
 
+_orig_get_accounts_data = None
+
+
+def err_closing_rate(from_currency, to_currency, transaction_date=None, *_args, **_kwargs):
+    """Rate source for Exchange Rate Revaluation: the latest Closing rate on
+    or before the posting date (so a revaluation posted 1 April prices at
+    31 March - closings only exist at month-ends). Returns 0 when no Closing
+    rate exists; the get_accounts_data wrapper drops and reports such rows
+    rather than letting a 0 rate post the whole balance as a fake loss."""
+    from peasforex.api.display_rates import _logged_rate_with_date
+
+    as_of = transaction_date or today()
+    rate, rate_date = _logged_rate_with_date("Closing", from_currency, to_currency, as_of)
+    if not rate:
+        return 0
+    expected = get_last_day(add_months(getdate(as_of), -1))
+    if getdate(rate_date) < expected:
+        frappe.msgprint(
+            _("Closing rate for {0} to {1} is dated {2} - older than expected ({3}). Check the monthly rate sync.").format(
+                from_currency, to_currency, rate_date, expected
+            ),
+            indicator="orange",
+            alert=True,
+        )
+    return rate
+
+
+@frappe.whitelist()
+def err_get_accounts_data(self):
+    """Drop rows the Closing lookup could not price (new rate 0 on a live
+    balance) and tell the user which currencies were skipped."""
+    accounts = _orig_get_accounts_data(self)
+    kept, skipped = [], set()
+    for row in accounts or []:
+        if not flt(row.get("new_exchange_rate")) and not row.get("zero_balance"):
+            skipped.add(row.get("account_currency"))
+        else:
+            kept.append(row)
+    if skipped:
+        frappe.msgprint(
+            _("Skipped accounts in {0}: no Closing rate on or before {1}. Log the rate in Forex Rate Log, or add the row manually with a rate.").format(
+                ", ".join(sorted(skipped)), self.posting_date
+            ),
+            indicator="orange",
+        )
+    return kept
+
+
 def apply_patches():
-    global _orig_cfs_execute
+    global _orig_cfs_execute, _orig_get_accounts_data
 
     from erpnext.accounts.report import utils
 
@@ -132,3 +181,16 @@ def apply_patches():
         _orig_cfs_execute = cfs.execute
         cfs_execute._peasforex_patched = True
         cfs.execute = cfs_execute
+
+    from erpnext.accounts.doctype.exchange_rate_revaluation import (
+        exchange_rate_revaluation as err,
+    )
+
+    # both get_accounts_data (grid fetch) and get_account_details (manual row)
+    # resolve get_exchange_rate from this module's globals
+    err.get_exchange_rate = err_closing_rate
+
+    if not getattr(err.ExchangeRateRevaluation.get_accounts_data, "_peasforex_patched", False):
+        _orig_get_accounts_data = err.ExchangeRateRevaluation.get_accounts_data
+        err_get_accounts_data._peasforex_patched = True
+        err.ExchangeRateRevaluation.get_accounts_data = err_get_accounts_data
