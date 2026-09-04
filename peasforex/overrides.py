@@ -68,13 +68,15 @@ def get_rate_as_at(date, from_currency, to_currency):
 
 _orig_cfs_execute = None
 
-UNCONVERTED_FIELD = "peasforex_unconverted"
+STANDALONE_FIELD = "peasforex_parent_standalone"
 
 
 def cfs_execute(filters=None):
-    """Wrap the Consolidated Financial Statement to add an extra column:
-    the parent company's figures in its own base currency, untouched by
-    presentation-currency conversion."""
+    """Wrap the Consolidated Financial Statement to add a "PEAS UK" column:
+    the parent company's standalone figures (no group accumulation),
+    converted to the presentation currency at the selected Rate Type like
+    every other column - so finance can trace the consolidated sum when
+    'Accumulated Values in Group Company' hides the parent's own books."""
     result = list(_orig_cfs_execute(filters))
     company = filters.get("company") if filters else None
     pres = filters.get("presentation_currency") if filters else None
@@ -93,32 +95,29 @@ def cfs_execute(filters=None):
     ):
         return tuple(result)
 
-    base = frappe.get_cached_value("Company", company, "default_currency")
     columns, data = result[0], result[1]
 
     # ponytail: full second execution; cache if consolidated reports feel slow.
-    # No presentation currency and no group accumulation: the column must
-    # always show the parent's OWN books in its own currency - never a sum,
-    # never converted - regardless of the report's checkboxes.
-    raw_filters = frappe._dict(filters)
-    raw_filters.presentation_currency = None
-    raw_filters.accumulated_in_group_company = 0
-    raw_data = list(_orig_cfs_execute(raw_filters))[1] or []
-    raw_by_account = {row.get("account"): row.get(company) for row in raw_data if row}
+    # Same presentation currency and Rate Type (rate_type flows via
+    # frappe.form_dict), but WITHOUT group accumulation: the parent's
+    # standalone figures on the same conversion basis as every other column.
+    standalone_filters = frappe._dict(filters)
+    standalone_filters.accumulated_in_group_company = 0
+    standalone_data = list(_orig_cfs_execute(standalone_filters))[1] or []
+    standalone_by_account = {row.get("account"): row.get(company) for row in standalone_data if row}
 
-    label = f"{company} ({base}, Unconverted)"
+    label = f"PEAS UK ({pres})"
     idx = next((i for i, c in enumerate(columns) if c.get("fieldname") == company), len(columns) - 1)
     columns.insert(idx + 1, {
-        "fieldname": UNCONVERTED_FIELD,
+        "fieldname": STANDALONE_FIELD,
         "label": label,
         "fieldtype": "Currency",
-        "width": 40 + 8 * len(label),
-        "apply_currency_formatter": 1,
-        "company_name": company,
+        "options": "currency",
+        "width": max(150, 40 + 8 * len(label)),
     })
     for row in data:
-        if row and row.get("account") in raw_by_account:
-            row[UNCONVERTED_FIELD] = raw_by_account[row.get("account")]
+        if row and row.get("account") in standalone_by_account:
+            row[STANDALONE_FIELD] = standalone_by_account[row.get("account")]
     return tuple(result)
 
 
