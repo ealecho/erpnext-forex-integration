@@ -70,11 +70,14 @@ def get_display_rates(filters=None, report_name=None):
             frappe.get_cached_value("Company", c, "default_currency") for c in companies
         }
 
+    # currency codes only - bypass row-level permissions so users restricted
+    # to a subset of companies/accounts still see the rates strip
     account_ccys = frappe.get_all(
         "Account",
         filters={"company": ("in", companies), "is_group": 0, "disabled": 0},
         pluck="account_currency",
         distinct=True,
+        ignore_permissions=True,
     )
     # conversion currencies first, then informational account currencies
     ccys = [
