@@ -85,7 +85,12 @@ def cfs_execute(filters=None):
             if c.get("fieldtype") == "Currency":
                 c["width"] = max(c.get("width") or 150, 40 + 8 * len(c.get("label") or ""))
 
-    if not (company and pres) or len(result) < 2 or not result[1]:
+    if (
+        not (company and pres)
+        or not filters.get("accumulated_in_group_company")
+        or len(result) < 2
+        or not result[1]
+    ):
         return tuple(result)
 
     base = frappe.get_cached_value("Company", company, "default_currency")
