@@ -4,7 +4,7 @@
 // Global namespace for Peasforex
 frappe.provide("peasforex");
 
-peasforex = {
+window.peasforex = {
     // Get current exchange rate
     get_exchange_rate: function(from_currency, to_currency, callback) {
         frappe.call({

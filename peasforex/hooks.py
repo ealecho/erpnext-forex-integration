@@ -9,8 +9,9 @@ app_version = "0.0.1"
 # Required Apps
 required_apps = ["frappe", "erpnext"]
 
-# Include JS in Desk
-app_include_js = "/assets/peasforex/js/peasforex.js"
+# Include JS in Desk - a .bundle.js entry gets a content-hashed filename
+# per bench build, so browsers pick up new code without cache-clearing
+app_include_js = "peasforex.bundle.js"
 
 # Include CSS in Desk
 # app_include_css = "/assets/peasforex/css/peasforex.css"
