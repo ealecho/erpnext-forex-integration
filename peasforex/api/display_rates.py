@@ -86,10 +86,16 @@ def get_display_rates(filters=None, report_name=None):
         if c != pres
     ]
 
+    from peasforex.overrides import parse_manual_rates
+
+    manual = parse_manual_rates(filters.get("manual_rates")) if rate_type == "Manual" else {}
+
     rates = []
     for ccy in ccys:
         rate, rate_date, source = None, None, rate_type
-        if rate_type != "Manual":
+        if rate_type == "Manual" and flt(manual.get(ccy)):
+            rate, source = flt(manual[ccy]), "Manual (entered)"
+        elif rate_type != "Manual":
             rate, rate_date = _logged_rate_with_date(rate_type, ccy, pres, date)
         if rate is None:
             try:

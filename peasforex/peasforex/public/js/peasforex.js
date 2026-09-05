@@ -77,6 +77,14 @@ peasforex = {
         ],
         default: "Closing",
     };
+    // holds user-entered rates for Rate Type = Manual, as JSON
+    // {"UGX": 0.000196, ...} meaning 1 UGX = 0.000196 <presentation currency>
+    const MANUAL_RATES_FILTER = {
+        fieldname: "manual_rates",
+        label: __("Manual Rates"),
+        fieldtype: "Data",
+        hidden: 1,
+    };
 
     frappe.provide("frappe.query_reports");
 
@@ -118,20 +126,51 @@ peasforex = {
                 return;
             }
             const label = `${__("Applied Rates")} · ${__(msg.rate_type)} · ${__("for period ending {0}", [frappe.datetime.str_to_user(msg.date)])}`;
-            $box.empty().append(`<span class="text-muted small">${label}:</span>`);
+            $box.empty().append(
+                `<span style="font-weight:600;font-size:var(--text-md,13px);">${label}:</span>`
+            );
             msg.rates.forEach((row) => {
                 let title = __("Source: {0}", [row.source]);
                 if (row.rate_date) {
                     title += ` · ${__("rate dated {0}", [frappe.datetime.str_to_user(row.rate_date)])}`;
                 }
-                const pill = $(
-                    `<span class="indicator-pill ${row.used_for_conversion ? "blue" : "gray"}"></span>`
-                )
+                const pill = $('<span class="indicator-pill blue" style="font-weight:600;"></span>')
                     .text(`1 ${row.from_currency} = ${format_rate(row.rate)} ${row.to_currency}`)
                     .attr("title", title);
                 $box.append(pill);
             });
+            if (values.rate_type === "Manual") {
+                const btn = $(
+                    `<button class="btn btn-xs btn-default">${__("Set Rates")}</button>`
+                ).on("click", () => prompt_manual_rates(report, msg.rates));
+                $box.append(btn);
+            }
         });
+    }
+
+    function prompt_manual_rates(report, rates) {
+        const fields = rates.map((row) => ({
+            fieldtype: "Float",
+            fieldname: row.from_currency,
+            label: __("1 {0} in {1}", [row.from_currency, row.to_currency]),
+            default: row.rate,
+        }));
+        frappe.prompt(fields, (entered) => {
+            const clean = {};
+            Object.entries(entered).forEach(([ccy, rate]) => {
+                if (rate) clean[ccy] = rate;
+            });
+            const filter = report.get_filter("manual_rates");
+            if (filter) {
+                filter.value = JSON.stringify(clean);
+                try {
+                    filter.set_input && filter.set_input(filter.value);
+                } catch (e) {
+                    // hidden control may have no input element
+                }
+            }
+            report.refresh();
+        }, __("Manual Applied Rates"), __("Apply"));
     }
 
     REPORTS.forEach(function(name) {
@@ -149,6 +188,9 @@ peasforex = {
                 if (filters && !filters.some((f) => f.fieldname === "rate_type")) {
                     const idx = filters.findIndex((f) => f.fieldname === "periodicity");
                     filters.splice(idx >= 0 ? idx + 1 : filters.length, 0, RATE_TYPE_FILTER);
+                }
+                if (filters && !filters.some((f) => f.fieldname === "manual_rates")) {
+                    filters.push(MANUAL_RATES_FILTER);
                 }
                 if (config) {
                     const orig = config.after_datatable_render;
