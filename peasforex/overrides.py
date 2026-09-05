@@ -194,6 +194,12 @@ def err_closing_rate(from_currency, to_currency, transaction_date=None, *_args, 
     rate, rate_date = _logged_rate_with_date("Closing", from_currency, to_currency, as_of)
     if not rate:
         return 0
+    # collect matched rate dates so get_accounts_data can tell the user
+    # which month-end actually priced this revaluation
+    dates = getattr(frappe.local, "peasforex_err_rate_dates", None)
+    if dates is None:
+        dates = frappe.local.peasforex_err_rate_dates = set()
+    dates.add(str(rate_date))
     expected = get_last_day(add_months(getdate(as_of), -1))
     if getdate(rate_date) < expected:
         frappe.msgprint(
@@ -209,8 +215,20 @@ def err_closing_rate(from_currency, to_currency, transaction_date=None, *_args, 
 @frappe.whitelist()
 def err_get_accounts_data(self):
     """Drop rows the Closing lookup could not price (new rate 0 on a live
-    balance) and tell the user which currencies were skipped."""
+    balance), tell the user which currencies were skipped, and state which
+    Closing rate date(s) priced the entries."""
+    frappe.local.peasforex_err_rate_dates = set()
     accounts = _orig_get_accounts_data(self)
+    dates = frappe.local.peasforex_err_rate_dates
+    if dates:
+        frappe.msgprint(
+            _("Priced at Closing rate(s) of {0} (posting date {1}).").format(
+                ", ".join(frappe.utils.formatdate(d) for d in sorted(dates)),
+                frappe.utils.formatdate(self.posting_date),
+            ),
+            indicator="blue",
+            alert=True,
+        )
     kept, skipped = [], set()
     for row in accounts or []:
         if not flt(row.get("new_exchange_rate")) and not row.get("zero_balance"):
