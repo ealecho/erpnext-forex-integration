@@ -18,15 +18,27 @@ def test_requested_rate_type_parses_form_dict():
 
 
 def test_logged_rate_uses_inverse_pair():
-    # direct pair missing, inverse UGX->USD = 0.00027 -> USD->UGX ~ 3703.7
-    def fake_get_value(doctype, filters, fieldname, order_by=None):
-        if filters["from_currency"] == "UGX":
-            return 0.00027
-        return None
+    import datetime
 
-    with patch.object(overrides.frappe.db, "get_value", side_effect=fake_get_value):
+    # direct pair missing, inverse UGX->USD = 0.00027 -> USD->UGX ~ 3703.7
+    def fake_get_all(doctype, filters=None, **kwargs):
+        if filters["from_currency"] == "UGX":
+            return [
+                overrides.frappe._dict(rate_date=datetime.date(2026, 7, 31), exchange_rate=0.00020),
+                overrides.frappe._dict(rate_date=datetime.date(2026, 8, 31), exchange_rate=0.00027),
+            ]
+        return []
+
+    with (
+        patch.object(overrides.frappe, "get_all", side_effect=fake_get_all),
+        patch.object(overrides.frappe, "local", types.SimpleNamespace()),
+    ):
         rate = overrides._get_logged_rate("Closing", "USD", "UGX", "2026-08-31")
-    assert round(rate, 1) == 3703.7
+        assert round(rate, 1) == 3703.7
+        # mid-month date picks the latest rate on or before it, not a later one
+        assert overrides._get_logged_rate("Closing", "USD", "UGX", "2026-08-15") == 1 / 0.00020
+        # before any logged rate -> None
+        assert overrides._get_logged_rate("Closing", "USD", "UGX", "2026-06-30") is None
 
 
 def test_err_rows_without_closing_rate_are_dropped():

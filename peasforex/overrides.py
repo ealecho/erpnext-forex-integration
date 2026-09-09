@@ -8,6 +8,7 @@ found there (including "Manual") falls back to ERPNext's standard
 Currency Exchange lookup."""
 
 import json
+from bisect import bisect_right
 
 import frappe
 from frappe import _
@@ -56,19 +57,34 @@ def _manual_rate(from_currency, to_currency, filters):
     return r_from / r_to if r_from and r_to else None
 
 
+def _rate_series(rate_type, from_currency, to_currency):
+    """All logged rates for one (rate_type, pair), fetched once per request.
+    Financial reports call get_rate_as_at once per GL entry date; per-date
+    DB lookups were the bottleneck on sites with 10k+ GL entries."""
+    cache = getattr(frappe.local, "peasforex_rate_series", None)
+    if cache is None:
+        cache = frappe.local.peasforex_rate_series = {}
+    key = (rate_type, from_currency, to_currency)
+    if key not in cache:
+        cache[key] = frappe.get_all(
+            "Forex Rate Log",
+            filters={
+                "rate_type": rate_type,
+                "from_currency": from_currency,
+                "to_currency": to_currency,
+            },
+            fields=["rate_date", "exchange_rate"],
+            order_by="rate_date asc",
+            limit_page_length=0,
+        )
+    return cache[key]
+
+
 def _get_logged_rate(rate_type, from_currency, to_currency, date):
     def latest(f, t):
-        return frappe.db.get_value(
-            "Forex Rate Log",
-            {
-                "rate_type": rate_type,
-                "from_currency": f,
-                "to_currency": t,
-                "rate_date": ("<=", getdate(date)),
-            },
-            "exchange_rate",
-            order_by="rate_date desc",
-        )
+        rows = _rate_series(rate_type, f, t)
+        i = bisect_right(rows, getdate(date), key=lambda r: r.rate_date)
+        return rows[i - 1].exchange_rate if i else None
 
     rate = latest(from_currency, to_currency)
     if rate:
