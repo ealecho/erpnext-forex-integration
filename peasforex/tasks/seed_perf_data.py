@@ -30,7 +30,13 @@ def seed(count=10000, company=None):
     _guard()
     from erpnext.accounts.utils import get_fiscal_year
 
-    company = company or frappe.defaults.get_global_default("company")
+    company = (
+        company
+        or frappe.defaults.get_global_default("company")
+        or frappe.db.get_value("Company", {}, "name")
+    )
+    if not company:
+        frappe.throw("No Company found; pass one via --kwargs \"{'company': '...'}\"")
     currency = frappe.db.get_value("Company", company, "default_currency")
     fy_name, fy_start, fy_end = get_fiscal_year(nowdate(), company=company)
     fy_start, span = getdate(fy_start), (getdate(min(str(nowdate()), str(fy_end))) - getdate(fy_start)).days + 1
