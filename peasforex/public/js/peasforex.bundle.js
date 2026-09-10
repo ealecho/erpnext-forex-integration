@@ -154,6 +154,9 @@ window.peasforex = {
             fieldname: row.from_currency,
             label: __("1 {0} in {1}", [row.from_currency, row.to_currency]),
             default: row.rate,
+            // system float precision (3) rounds small rates to 0.000 on
+            // display AND on parse - 6 matches the Applied Rates strip
+            precision: 6,
         }));
         frappe.prompt(fields, (entered) => {
             const clean = {};
