@@ -93,6 +93,15 @@ window.peasforex = {
         return rate >= 1 ? format_number(rate, null, 2) : rate.toFixed(6);
     }
 
+    // quote in whichever direction reads >= 1: "1 GBP = 5,128.21 UGX"
+    // rather than the technically-equal "1 UGX = 0.000195 GBP"
+    function rate_direction(row) {
+        if (row.rate && row.rate < 1) {
+            return { from: row.to_currency, to: row.from_currency, rate: 1 / row.rate, flipped: true };
+        }
+        return { from: row.from_currency, to: row.to_currency, rate: row.rate, flipped: false };
+    }
+
     // "Applied Rates" strip between the filter form and the summary cards:
     // one pill per account currency showing the exact rate used to express
     // it in the presentation currency, per the selected Rate Type.
@@ -134,8 +143,9 @@ window.peasforex = {
                 if (row.rate_date) {
                     title += ` · ${__("rate dated {0}", [frappe.datetime.str_to_user(row.rate_date)])}`;
                 }
+                const dir = rate_direction(row);
                 const pill = $('<span class="indicator-pill blue" style="font-weight:600;"></span>')
-                    .text(`1 ${row.from_currency} = ${format_rate(row.rate)} ${row.to_currency}`)
+                    .text(`1 ${dir.from} = ${format_rate(dir.rate)} ${dir.to}`)
                     .attr("title", title);
                 $box.append(pill);
             });
@@ -149,19 +159,26 @@ window.peasforex = {
     }
 
     function prompt_manual_rates(report, rates) {
-        const fields = rates.map((row) => ({
-            fieldtype: "Float",
-            fieldname: row.from_currency,
-            label: __("1 {0} in {1}", [row.from_currency, row.to_currency]),
-            default: row.rate,
-            // system float precision (3) rounds small rates to 0.000 on
-            // display AND on parse - 6 matches the Applied Rates strip
-            precision: 6,
-        }));
+        // entry direction matches the strip; flipped values are inverted
+        // back to "1 <account ccy> = x <presentation ccy>" on Apply
+        const flipped = {};
+        const fields = rates.map((row) => {
+            const dir = rate_direction(row);
+            flipped[row.from_currency] = dir.flipped;
+            return {
+                fieldtype: "Float",
+                fieldname: row.from_currency,
+                label: __("1 {0} in {1}", [dir.from, dir.to]),
+                default: dir.rate,
+                // system float precision (3) rounds small rates to 0.000 on
+                // display AND on parse - 6 matches the Applied Rates strip
+                precision: 6,
+            };
+        });
         frappe.prompt(fields, (entered) => {
             const clean = {};
             Object.entries(entered).forEach(([ccy, rate]) => {
-                if (rate) clean[ccy] = rate;
+                if (rate) clean[ccy] = flipped[ccy] ? 1 / rate : rate;
             });
             const filter = report.get_filter("manual_rates");
             if (filter) {
@@ -189,11 +206,32 @@ window.peasforex = {
                 const filters = config && config.filters;
                 // filters array is shared across the three reports, so guard
                 if (filters && !filters.some((f) => f.fieldname === "rate_type")) {
-                    const idx = filters.findIndex((f) => f.fieldname === "periodicity");
-                    filters.splice(idx >= 0 ? idx + 1 : filters.length, 0, RATE_TYPE_FILTER);
+                    // right before the Currency filter, so the pair sits
+                    // together in every report (CFS has no periodicity)
+                    const idx = filters.findIndex((f) => f.fieldname === "presentation_currency");
+                    filters.splice(idx >= 0 ? idx : filters.length, 0, RATE_TYPE_FILTER);
                 }
                 if (filters && !filters.some((f) => f.fieldname === "manual_rates")) {
                     filters.push(MANUAL_RATES_FILTER);
+                }
+                // picking a company defaults the presentation currency to
+                // that company's currency, which activates rate retrieval
+                const company = filters && filters.find((f) => f.fieldname === "company");
+                if (company && !company.__peasforex_currency_hook) {
+                    company.__peasforex_currency_hook = true;
+                    const orig_change = company.on_change;
+                    company.on_change = function (report) {
+                        if (orig_change) orig_change.call(this, report);
+                        const comp = report.get_filter_value("company");
+                        if (comp && !report.get_filter_value("presentation_currency")) {
+                            frappe.db.get_value("Company", comp, "default_currency").then((r) => {
+                                const ccy = r.message && r.message.default_currency;
+                                if (ccy) report.set_filter_value("presentation_currency", ccy);
+                            });
+                        }
+                        // df.on_change suppresses the default auto-refresh
+                        if (!orig_change) report.refresh();
+                    };
                 }
                 if (config) {
                     const orig = config.after_datatable_render;
