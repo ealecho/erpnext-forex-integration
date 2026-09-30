@@ -57,7 +57,7 @@
    "fieldname": "bs_rate_type",
    "fieldtype": "Select",
    "label": "Balance Sheet Rate",
-   "options": "Closing\nAsk Rate\nCentral Bank"
+   "options": "Closing\nLive Rate\nCentral Bank"
   },
   {
    "fieldname": "col2",
@@ -85,7 +85,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-16 19:21:27.450954",
+ "modified": "2026-09-30 21:00:00.000000",
  "modified_by": "Administrator",
  "module": "Peasforex",
  "name": "FS Rate Demo",

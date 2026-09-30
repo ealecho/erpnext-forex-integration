@@ -35,21 +35,21 @@ def get_data(chart_name=None, chart=None, no_cache=None, filters=None,
     # Build WHERE clause based on currency group
     where_clause = build_currency_filter(currency_group)
     
-    # Get the latest Ask Rate for each currency pair (Ask is the indicative
-    # rate used for transactions; Spot is reserved for manual negotiated entries).
+    # Get the latest Live Rate for each currency pair (the indicative rate
+    # used for transactions; Spot is reserved for manual negotiated entries).
     query = """
         SELECT
             CONCAT(from_currency, ' → ', to_currency) as currency_pair,
             exchange_rate,
             rate_date
         FROM `tabForex Rate Log` frl
-        WHERE rate_type = 'Ask Rate'
+        WHERE rate_type = 'Live Rate'
         AND rate_date = (
             SELECT MAX(rate_date)
             FROM `tabForex Rate Log` frl2
             WHERE frl2.from_currency = frl.from_currency
             AND frl2.to_currency = frl.to_currency
-            AND frl2.rate_type = 'Ask Rate'
+            AND frl2.rate_type = 'Live Rate'
         )
         {where_clause}
         ORDER BY from_currency, to_currency

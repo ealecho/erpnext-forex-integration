@@ -35,7 +35,7 @@ frappe.query_reports["Exchange Rate History"] = {
             "fieldname": "rate_type",
             "label": __("Rate Type"),
             "fieldtype": "Select",
-            "options": "\nAsk Rate\nSpot\nClosing\nMonthly Average\nCentral Bank Rate",
+            "options": "\nLive Rate\nSpot\nClosing\nMonthly Average\nCentral Bank Rate",
             "reqd": 0
         }
     ],
@@ -165,7 +165,7 @@ frappe.query_reports["Exchange Rate History"] = {
         if (column.fieldname === "rate_type" && data) {
             // Color code rate types
             let colors = {
-                "Ask Rate": "#28a745",
+                "Live Rate": "#28a745",
                 "Spot": "#ffc107",
                 "Closing": "#007bff",
                 "Monthly Average": "#6c757d",

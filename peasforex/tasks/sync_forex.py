@@ -371,7 +371,7 @@ def sync_daily_spot_rates():
             if result.get("error"):
                 log_error(f"API error for {pair_str}: {result.get('error')}")
                 log_sync(
-                    sync_type="Ask Rate (Daily)",
+                    sync_type="Live Rate (Daily)",
                     currency_pair=pair_str,
                     status="Error",
                     error_message=result.get("error"),
@@ -386,7 +386,7 @@ def sync_daily_spot_rates():
             if not rate or rate <= 0:
                 log_error(f"Invalid rate received for {pair_str}: {rate}")
                 log_sync(
-                    sync_type="Ask Rate (Daily)",
+                    sync_type="Live Rate (Daily)",
                     currency_pair=pair_str,
                     status="Error",
                     error_message="Invalid exchange rate received",
@@ -419,7 +419,7 @@ def sync_daily_spot_rates():
                     from_currency=from_currency,
                     to_currency=to_currency,
                     rate_date=current_date,
-                    rate_type="Ask Rate",
+                    rate_type="Live Rate",
                     exchange_rate=rate,
                     api_response=result.get("raw"),
                 )
@@ -428,13 +428,13 @@ def sync_daily_spot_rates():
                         from_currency=to_currency,
                         to_currency=from_currency,
                         rate_date=current_date,
-                        rate_type="Ask Rate",
+                        rate_type="Live Rate",
                         exchange_rate=1.0 / rate,
                     )
 
             # Log success
             log_sync(
-                sync_type="Ask Rate (Daily)",
+                sync_type="Live Rate (Daily)",
                 currency_pair=pair_str,
                 status="Success",
                 exchange_rate=rate,
@@ -447,7 +447,7 @@ def sync_daily_spot_rates():
             log_error(f"Exception syncing {pair_str}: {str(e)}")
             frappe.log_error(frappe.get_traceback(), f"Forex Sync Error: {pair_str}")
             log_sync(
-                sync_type="Ask Rate (Daily)",
+                sync_type="Live Rate (Daily)",
                 currency_pair=pair_str,
                 status="Error",
                 error_message=str(e),
@@ -798,14 +798,14 @@ def backfill_historical_rates(months=6):
 
                     # Store in rate log. AV FX_DAILY is mid-market close, not
                     # true ask, but per PEAS convention historical backfill
-                    # is logged as Ask Rate (the gap is acknowledged in
+                    # is logged as Live Rate (the gap is acknowledged in
                     # CLAUDE.md). Spot is reserved for manual negotiated entries.
                     if settings.store_historical_data:
                         store_rate_log(
                             from_currency=from_currency,
                             to_currency=to_currency,
                             rate_date=date_str,
-                            rate_type="Ask Rate",
+                            rate_type="Live Rate",
                             exchange_rate=close_rate,
                             open_rate=values.get("open"),
                             high_rate=values.get("high"),
@@ -817,7 +817,7 @@ def backfill_historical_rates(months=6):
                                 from_currency=to_currency,
                                 to_currency=from_currency,
                                 rate_date=date_str,
-                                rate_type="Ask Rate",
+                                rate_type="Live Rate",
                                 exchange_rate=1.0 / close_rate,
                             )
 

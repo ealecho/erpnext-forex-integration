@@ -122,10 +122,10 @@ ACCEPTANCE = {
         "mode": "API",
         "acceptance": [
             {
-                "title": "Today's Ask Rate rows exist in the expected count (2 x enabled daily pairs)",
+                "title": "Today's Live Rate rows exist in the expected count (2 x enabled daily pairs)",
                 "gwt": [
                     "Given the daily sync has run today",
-                    "When I count Ask Rate rows in Forex Rate Log for today",
+                    "When I count Live Rate rows in Forex Rate Log for today",
                     "Then the count equals 2 x (enabled daily pairs) - forward and reverse for each",
                 ],
                 "why": "Off-count signals a partial sync: reverse rates missing would break any transaction booked in the reverse direction.",
@@ -142,7 +142,7 @@ ACCEPTANCE = {
             {
                 "title": "GBP->UGX is in a realistic range (3000-8000)",
                 "gwt": [
-                    "When I read today's GBP->UGX Ask Rate",
+                    "When I read today's GBP->UGX Live Rate",
                     "Then it is between 3000 and 8000 UGX per GBP",
                 ],
                 "why": "A rate outside this band suggests a unit error (pence vs pounds, inverse stored wrong) that would silently corrupt ledger values.",
@@ -177,7 +177,7 @@ ACCEPTANCE = {
                     "Given today's GBP->UGX rate is in CE",
                     "When I open a new Purchase Invoice and set Company=PEAS Uganda, Currency=GBP",
                     "Then conversion_rate populates automatically",
-                    "And the populated rate matches today's CE Ask Rate within 5%",
+                    "And the populated rate matches today's CE Live Rate within 5%",
                 ],
                 "why": "If Robert has to type the rate himself, he will occasionally mistype, producing mis-booked GL entries that cost Finance hours to reconcile.",
             },
@@ -231,9 +231,9 @@ ACCEPTANCE = {
                 "why": "If Average matches Closing, one of them is likely bogus data - the two numbers represent distinct accounting methodologies (P&L vs B/S).",
             },
             {
-                "title": "Currency Exchange carries today's Ask Rate, not Closing or Average",
+                "title": "Currency Exchange carries today's Live Rate, not Closing or Average",
                 "gwt": [
-                    "When I compare today's CE rate for GBP->UGX to today's FRL Ask Rate",
+                    "When I compare today's CE rate for GBP->UGX to today's FRL Live Rate",
                     "Then they are equal (within 0.01)",
                 ],
                 "why": "Mixing Closing or Average into CE would make transactions use the wrong rate type. CE must stay Ask-only.",
@@ -296,10 +296,10 @@ ACCEPTANCE = {
                 "why": "Sibeti cannot pick rates without the selectors; missing rates_html means no output surface.",
             },
             {
-                "title": "bs_rate_type offers 'Ask Rate' (post-rename) and no longer offers 'Spot'",
+                "title": "bs_rate_type offers 'Live Rate' (post-rename) and no longer offers 'Spot'",
                 "gwt": [
                     "When I read the bs_rate_type Select options",
-                    "Then 'Ask Rate' is present",
+                    "Then 'Live Rate' is present",
                     "And 'Spot' is absent",
                 ],
                 "why": "Regression guard: the April 2026 terminology rename must hold here too, or Sibeti sees a stale option.",
@@ -363,7 +363,7 @@ ACCEPTANCE = {
                     "Given a GBP Bank account and a UGX Cash account exist on PEAS Uganda",
                     "When I open a new Payment Entry, set Payment Type=Internal Transfer, Paid From=Bank GBP - UG, Paid To=Cash - UG",
                     "Then source_exchange_rate auto-populates",
-                    "And the value matches today's CE Ask Rate within 5%",
+                    "And the value matches today's CE Live Rate within 5%",
                 ],
                 "why": "Internal transfers across currencies happen daily; manual rate lookup introduces drift between booked and actual rates.",
             },
@@ -380,7 +380,7 @@ ACCEPTANCE = {
                     "Given a GBP leaf account exists on PEAS Uganda",
                     "When I enable multi_currency on a new JE and add a GBP row",
                     "Then the row accepts a rate resolved via the shared endpoint",
-                    "And the rate matches today's CE Ask Rate within 5%",
+                    "And the rate matches today's CE Live Rate within 5%",
                 ],
                 "why": "Validates the underlying rate-resolution contract works for JE. Full onchange-driven auto-populate on row add is proven separately by Story 22.",
             },
@@ -463,12 +463,12 @@ ACCEPTANCE = {
                 "why": "This is the terminology-rename regression guard. If the auto-backfill ever labels AV data as Spot again, this assertion fails immediately.",
             },
             {
-                "title": "Ask Rate pipeline is live (records exist on at least one date)",
+                "title": "Live Rate pipeline is live (records exist on at least one date)",
                 "gwt": [
-                    "When I count distinct rate_date values where rate_type='Ask Rate'",
+                    "When I count distinct rate_date values where rate_type='Live Rate'",
                     "Then the count is at least 1",
                 ],
-                "why": "An empty Ask Rate set means the sync is not running at all - transactions would then fall through to CE-only or fail.",
+                "why": "An empty Live Rate set means the sync is not running at all - transactions would then fall through to CE-only or fail.",
             },
         ],
     },
@@ -502,18 +502,18 @@ ACCEPTANCE = {
                 "why": "Identity guarantee; simplest sanity check of the resolver.",
             },
             {
-                "title": "Auto falls back to Ask Rate when no Spot exists for the date",
+                "title": "Auto falls back to Live Rate when no Spot exists for the date",
                 "gwt": [
                     "When I call resolve(USD, UGX, today, 'Auto') and no Spot exists for USD->UGX today",
-                    "Then the returned source is 'Ask Rate' and the rate is the CE/FRL Ask Rate",
+                    "Then the returned source is 'Live Rate' and the rate is the CE/FRL Live Rate",
                 ],
                 "why": "This is the most-invoked path (default Auto). Breaks here break every transaction.",
             },
             {
-                "title": "Explicit Ask Rate resolves when data is present",
+                "title": "Explicit Live Rate resolves when data is present",
                 "gwt": [
-                    "When I call resolve(USD, UGX, today, 'Ask Rate')",
-                    "Then it returns the Ask rate with source='Ask Rate'",
+                    "When I call resolve(USD, UGX, today, 'Live Rate')",
+                    "Then it returns the Live Rate with source='Live Rate'",
                 ],
                 "why": "Users who pick a specific source must get that source.",
             },
@@ -560,11 +560,11 @@ ACCEPTANCE = {
                 "why": "Robert skips the manual lookup. Accuracy within 1% is the tolerance auditors accept for rate-of-day entries.",
             },
             {
-                "title": "custom_forex_rate_source is rewritten from 'Auto' to the actual source used (Ask Rate or Spot)",
+                "title": "custom_forex_rate_source is rewritten from 'Auto' to the actual source used (Live Rate or Spot)",
                 "gwt": [
                     "Given Robert chose Auto",
                     "When the resolver picks a concrete source",
-                    "Then the saved document shows source='Ask Rate' or 'Spot', not 'Auto'",
+                    "Then the saved document shows source='Live Rate' or 'Spot', not 'Auto'",
                 ],
                 "why": "Auditors reading this EA six months later see which rate methodology applied. 'Auto' alone is not auditable.",
             },
@@ -656,7 +656,7 @@ ACCEPTANCE = {
                 "gwt": [
                     "Given Robert selected Auto",
                     "When the PE saves",
-                    "Then custom_forex_rate_source is 'Ask Rate' or 'Spot' (never left as 'Auto')",
+                    "Then custom_forex_rate_source is 'Live Rate' or 'Spot' (never left as 'Auto')",
                 ],
                 "why": "Same audit-stamping contract as other transaction types - PE must not be a hole in the trail.",
             },
@@ -685,7 +685,7 @@ ACCEPTANCE = {
                 "why": "The rate staged must survive through the hook and end up on the saved row.",
             },
             {
-                "title": "The GBP row's custom_forex_rate_source is stamped per-row from 'Auto' to 'Ask Rate' or 'Spot'",
+                "title": "The GBP row's custom_forex_rate_source is stamped per-row from 'Auto' to 'Live Rate' or 'Spot'",
                 "gwt": [
                     "Given per-row source field (moved to Journal Entry Account)",
                     "When the resolver runs",
@@ -792,7 +792,7 @@ ACCEPTANCE = {
                 "why": "Company Card path must not be a forex bypass. A Credit Card USD charge still needs a source-stamped rate for audit.",
             },
             {
-                "title": "The line's custom_forex_rate_source is stamped 'Ask Rate' or 'Spot' (Auto rewritten)",
+                "title": "The line's custom_forex_rate_source is stamped 'Live Rate' or 'Spot' (Auto rewritten)",
                 "gwt": [
                     "Given the line's source=Auto initially",
                     "When the resolver resolves",

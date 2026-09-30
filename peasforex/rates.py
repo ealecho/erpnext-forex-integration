@@ -13,7 +13,7 @@ Each opted-in doctype has two PEAS custom fields:
     custom_forex_rate_applied_date Date  (defaults to the doc's posting_date)
 
 Resolution rules:
-- Live Rate: look up Ask Rate in Forex Rate Log (carries forward if today's
+- Live Rate: look up Live Rate in Forex Rate Log (carries forward if today's
   hasn't synced yet), fallback to Currency Exchange. Throws if neither.
 - Spot / Central Bank Rate: force that source, throw if missing in FRL.
 - Manual: preserve the user-typed value. Nothing is logged to FRL.
@@ -21,11 +21,6 @@ Resolution rules:
   the linked Employee Advance's custom_advance_exchange_rate.
 - Auto (internal): try Spot, else Live Rate. Not a visible UI option; used
   server-side as the default when no source is recorded.
-
-"Live Rate" is the user-facing label for what is stored internally as
-"Ask Rate" in Forex Rate Log. The boundary functions (_to_internal /
-_to_display) translate at the API surface; resolve() uses "Ask Rate"
-throughout and never sees "Live Rate".
 
 After Auto resolves, custom_forex_rate_source is rewritten to the actual
 source used ("Spot" or "Live Rate") so the saved document carries an honest
@@ -35,20 +30,6 @@ audit trail.
 import frappe
 from frappe import _
 from frappe.utils import nowdate
-
-
-# ---------------------------------------------------------------------------
-# "Live Rate" ↔ "Ask Rate" translation
-# "Ask Rate" is the internal FRL rate_type. "Live Rate" is what users see.
-# All code outside this file uses "Live Rate"; resolve() uses "Ask Rate".
-# ---------------------------------------------------------------------------
-
-def _to_internal(source):
-    return "Ask Rate" if source == "Live Rate" else source
-
-
-def _to_display(source):
-    return "Live Rate" if source == "Ask Rate" else source
 
 
 # ---------------------------------------------------------------------------
@@ -65,15 +46,14 @@ def save_rate_to_frl(from_currency, to_currency, rate_date, rate_type, exchange_
     lookups on the same date (e.g. other PEs or JEs that day).
     """
     frappe.has_permission("Forex Rate Log", "write", throw=True)
-    rate_type_internal = _to_internal(rate_type)
-    if rate_type_internal not in ("Spot", "Central Bank Rate"):
+    if rate_type not in ("Spot", "Central Bank Rate"):
         frappe.throw(_("Only Spot and Central Bank Rate can be saved to Forex Rate Log via this method."))
 
     existing = frappe.db.exists("Forex Rate Log", {
         "from_currency": from_currency,
         "to_currency": to_currency,
         "rate_date": rate_date,
-        "rate_type": rate_type_internal,
+        "rate_type": rate_type,
     })
     if existing:
         return {"name": existing, "status": "exists"}
@@ -83,7 +63,7 @@ def save_rate_to_frl(from_currency, to_currency, rate_date, rate_type, exchange_
         "from_currency": from_currency,
         "to_currency": to_currency,
         "rate_date": rate_date,
-        "rate_type": rate_type_internal,
+        "rate_type": rate_type,
         "exchange_rate": float(exchange_rate),
         "source": "Manual",
     })
@@ -165,14 +145,14 @@ def apply(doc, method=None):
         return
 
     # Everyone else: one parent-level source applies to all slots.
-    source = _to_internal(doc.get("custom_forex_rate_source") or "Auto")
+    source = doc.get("custom_forex_rate_source") or "Auto"
 
     # PEAS policy: at advance-request time the actual rate is unknown,
-    # so a Spot or back-dated rate makes no sense. Force Ask Rate +
+    # so a Spot or back-dated rate makes no sense. Force Live Rate +
     # use-today regardless of what was saved on the doc. (PE and EC
-    # keep full Spot/Ask/Manual + as-of-date flexibility.)
+    # keep full Spot/Live/Manual + as-of-date flexibility.)
     if doc.doctype == "Employee Advance":
-        source = "Ask Rate"
+        source = "Live Rate"
         as_of = doc.get("posting_date") or nowdate()
 
     if source in ("Inherited", "Manual"):
@@ -194,7 +174,7 @@ def apply(doc, method=None):
                 resolved_source = used
 
     if source == "Auto" and resolved_source:
-        doc.custom_forex_rate_source = _to_display(resolved_source)
+        doc.custom_forex_rate_source = resolved_source
 
     # Stamp the date the rate was looked up so auditors can re-derive the
     # exact resolver decision later. Only set on docs that actually had a
@@ -218,7 +198,7 @@ def _apply_je_per_row(doc, adapter, to_currency, as_of):
             # alone; if user picked Auto it stays Auto and is harmless.
             continue
 
-        source = _to_internal(row.get("custom_forex_rate_source") or "Auto")
+        source = row.get("custom_forex_rate_source") or "Auto"
 
         if source == "Inherited":
             # Programmatic callers (EC settlement, revaluation) fill the
@@ -234,7 +214,7 @@ def _apply_je_per_row(doc, adapter, to_currency, as_of):
             row.set(slot["rate_field"], rate)
             _recompute_je_row_base(row, rate)
         if source == "Auto" and actual_source:
-            row.set("custom_forex_rate_source", _to_display(actual_source))
+            row.set("custom_forex_rate_source", actual_source)
 
 
 def _recompute_je_row_base(row, rate):
@@ -266,17 +246,11 @@ def _resolve_and_set(obj, slot, to_currency, as_of, source):
 
 @frappe.whitelist()
 def resolve_whitelisted(from_currency, to_currency, as_of_date, source="Auto"):
-    """Whitelisted wrapper for client-side calls.
-
-    Accepts "Live Rate" as source (user-facing label) and returns "Live Rate"
-    in the response. Internally delegates to resolve() which uses "Ask Rate".
-    """
-    rate, actual_source, rate_date = resolve(
-        from_currency, to_currency, as_of_date, _to_internal(source)
-    )
+    """Whitelisted wrapper for client-side calls."""
+    rate, actual_source, rate_date = resolve(from_currency, to_currency, as_of_date, source)
     return {
         "rate": rate,
-        "source": _to_display(actual_source),
+        "source": actual_source,
         "rate_date": str(rate_date) if rate_date else None,
     }
 
@@ -284,33 +258,33 @@ def resolve_whitelisted(from_currency, to_currency, as_of_date, source="Auto"):
 def resolve(from_currency, to_currency, as_of_date, source="Auto"):
     """Returns (rate, actual_source, rate_date_used).
 
-    Throws on unresolvable forced source (Spot / Ask Rate / Central Bank Rate).
+    Throws on unresolvable forced source (Spot / Live Rate / Central Bank Rate).
     Returns (None, source, as_of_date) for Manual / Inherited (caller handles).
     """
     if from_currency == to_currency:
         return (1.0, source, as_of_date)
 
     if source == "Auto":
-        for candidate in ("Spot", "Ask Rate"):
+        for candidate in ("Spot", "Live Rate"):
             row = _lookup_frl(from_currency, to_currency, as_of_date, candidate)
             if row:
                 return (row["exchange_rate"], candidate, row["rate_date"])
-        # Fallback: Currency Exchange (historically the Ask home)
+        # Fallback: Currency Exchange (historically the Live Rate home)
         ce_rate = _lookup_ce(from_currency, to_currency, as_of_date)
         if ce_rate:
-            return (ce_rate, "Ask Rate", as_of_date)
+            return (ce_rate, "Live Rate", as_of_date)
         frappe.throw(_("No rate available for {0}→{1} on or before {2}").format(
             from_currency, to_currency, as_of_date))
 
-    if source in ("Spot", "Ask Rate", "Central Bank Rate"):
+    if source in ("Spot", "Live Rate", "Central Bank Rate"):
         row = _lookup_frl(from_currency, to_currency, as_of_date, source)
         if row:
             return (row["exchange_rate"], source, row["rate_date"])
-        # Ask Rate: also try CE as a last resort
-        if source == "Ask Rate":
+        # Live Rate: also try CE as a last resort
+        if source == "Live Rate":
             ce_rate = _lookup_ce(from_currency, to_currency, as_of_date)
             if ce_rate:
-                return (ce_rate, "Ask Rate", as_of_date)
+                return (ce_rate, "Live Rate", as_of_date)
         frappe.throw(_("No {0} rate available for {1}→{2} on or before {3}").format(
             source, from_currency, to_currency, as_of_date))
 
@@ -322,7 +296,7 @@ def _lookup_frl(from_currency, to_currency, as_of_date, rate_type):
     # Spot is a negotiated bank rate for a specific transaction day — it
     # never carries forward (yesterday's Spot is meaningless for today's
     # transaction). Require exact date match.
-    # Ask Rate / Central Bank Rate are reference rates — they carry forward
+    # Live Rate / Central Bank Rate are reference rates — they carry forward
     # if today's hasn't synced yet, so use <= for those.
     if rate_type == "Spot":
         date_clause = "rate_date = %s"

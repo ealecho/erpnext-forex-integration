@@ -60,7 +60,7 @@ doc_events = {
     },
     # Forex rate resolution on transaction doctypes. Each hook populates the
     # native rate field(s) based on custom_forex_rate_source + applied_date.
-    # See peasforex/rates.py for resolution semantics (Auto: Spot→Ask).
+    # See peasforex/rates.py for resolution semantics (Auto: Spot→Live Rate).
     "Purchase Invoice": {
         "before_validate": "peasforex.rates.apply"
     },

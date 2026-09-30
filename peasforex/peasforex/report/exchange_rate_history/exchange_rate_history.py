@@ -146,9 +146,9 @@ def get_chart(data, filters):
         pair_key = f"{filters.get('from_currency')} → {filters.get('to_currency')}"
         pair_data = pairs.get(pair_key, data)
         
-        # Filter for Ask Rate for cleaner chart (the indicative transaction
-        # rate), fallback to all rate types if no Ask Rate data exists.
-        ask_data = [d for d in pair_data if d.get("rate_type") == "Ask Rate"]
+        # Filter for Live Rate for cleaner chart (the indicative transaction
+        # rate), fallback to all rate types if no Live Rate data exists.
+        ask_data = [d for d in pair_data if d.get("rate_type") == "Live Rate"]
         if not ask_data:
             ask_data = pair_data
 
@@ -186,7 +186,7 @@ def get_chart(data, filters):
         all_dates = set()
         for pair_data in pairs.values():
             for row in pair_data:
-                if row.get("rate_type") == "Ask Rate":
+                if row.get("rate_type") == "Live Rate":
                     all_dates.add(row.get("rate_date"))
 
         if not all_dates:
@@ -204,13 +204,13 @@ def get_chart(data, filters):
         colors = ["#7cd6fd", "#5e64ff", "#743ee2", "#ff5858", "#ffa00a", "#28a745", "#17a2b8", "#6c757d"]
         
         for idx, (pair_key, pair_data) in enumerate(pairs.items()):
-            # Build date -> rate mapping for this pair, preferring Ask Rate.
+            # Build date -> rate mapping for this pair, preferring Live Rate.
             date_rate_map = {}
             for row in pair_data:
-                if row.get("rate_type") == "Ask Rate":
+                if row.get("rate_type") == "Live Rate":
                     date_rate_map[row.get("rate_date")] = float(row.get("exchange_rate") or 0)
 
-            # If no Ask Rate data, fall back to any rate type
+            # If no Live Rate data, fall back to any rate type
             if not date_rate_map:
                 for row in pair_data:
                     date_rate_map[row.get("rate_date")] = float(row.get("exchange_rate") or 0)

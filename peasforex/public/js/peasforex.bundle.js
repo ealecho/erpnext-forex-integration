@@ -73,7 +73,7 @@ window.peasforex = {
             { value: "Closing", label: __("Closing Rate") },
             { value: "Monthly Average", label: __("Average Rate") },
             { value: "Manual", label: __("Manual Rate") },
-            { value: "Ask Rate", label: __("Ask Rate (Spot)") },
+            { value: "Live Rate", label: __("Live Rate") },
         ],
         default: "Closing",
     };
@@ -239,8 +239,32 @@ window.peasforex = {
                                 if (ccy) report.set_filter_value("presentation_currency", ccy);
                             });
                         }
-                        // df.on_change suppresses the default auto-refresh
-                        if (!orig_change) report.refresh();
+                        // df.on_change suppresses the default auto-refresh;
+                        // skip it while the report is still loading
+                        if (!orig_change && !report._no_refresh) report.refresh();
+                    };
+                }
+                if (config && name === "Consolidated Financial Statement") {
+                    // consolidation starts at the group root (PEAS Global):
+                    // open on it and its currency, unless the URL (a link,
+                    // browser Back) already names a company
+                    const orig_onload = config.onload;
+                    config.onload = function (report) {
+                        if (orig_onload) orig_onload.call(this, report);
+                        if (new URLSearchParams(window.location.search).has("company")) return;
+                        return frappe.db
+                            .get_list("Company", {
+                                filters: { parent_company: ["is", "not set"] },
+                                fields: ["name", "default_currency"],
+                                limit: 2,
+                            })
+                            .then((roots) => {
+                                if (roots.length !== 1) return;
+                                return Promise.all([
+                                    report.get_filter("presentation_currency").set_value(roots[0].default_currency),
+                                    report.get_filter("company").set_value(roots[0].name),
+                                ]);
+                            });
                     };
                 }
                 if (config) {

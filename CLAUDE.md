@@ -11,7 +11,7 @@ Before writing code, check in order:
 1. **Reuse over net-new** — existing ERPNext Currency Exchange, existing Forex Rate Log, existing `resolve()` entry point.
 2. **Prune hypothetical-future abstractions** — delete Manager/Handler/Service classes without a second caller.
 3. **Prune defensive code for impossible states** — framework-trusted inputs don't need null guards; `try/except Exception: pass` is a red flag.
-4. **Keep specified edge cases tight** — Spot vs Ask precedence, bidirectional pair lookup, month-end closing rate are the REAL complexity; don't bury them under theatre.
+4. **Keep specified edge cases tight** — Spot vs Live Rate precedence, bidirectional pair lookup, month-end closing rate are the REAL complexity; don't bury them under theatre.
 
 A property setter beats a client script. A custom field beats a custom DocType. A `before_validate` hook beats overriding the doctype class. Three similar lines beats a premature abstraction.
 
@@ -19,23 +19,23 @@ A property setter beats a client script. A custom field beats a custom DocType. 
 ## What this app does
 
 peasforex integrates Alpha Vantage FX data into ERPNext for PEAS, and
-layers a Spot/Ask rate resolver over standard multi-currency transaction
+layers a Spot/Live rate resolver over standard multi-currency transaction
 doctypes (PI / PE / JE / Employee Advance / Expense Claim).
 
-- Daily sync fetches Ask Rate from CURRENCY_EXCHANGE_RATE.
+- Daily sync fetches Live Rate (AV ask price) from CURRENCY_EXCHANGE_RATE.
 - Monthly sync fetches Closing + Monthly Average from FX_DAILY.
-- Stored in Forex Rate Log. Ask Rate is copied to ERPNext's Currency
+- Stored in Forex Rate Log. Live Rate is copied to ERPNext's Currency
   Exchange so native transaction rate lookups work.
 - On opted-in transaction doctypes, a `before_validate` hook populates
   the native rate field with Spot (if one was manually logged today)
-  or Ask (fallback), and stamps the actually-used source for audit.
+  or Live Rate (fallback), and stamps the actually-used source for audit.
 
 ---
 ## Rate terminology (canonical)
 
 | Type | Where it comes from | Stored where | Consumed how |
 |---|---|---|---|
-| **Ask Rate** | Alpha Vantage CURRENCY_EXCHANGE_RATE (field 9), daily; also the label used for historical mid-market from FX_DAILY per PEAS convention | Forex Rate Log **and** Currency Exchange | Transactions default to this via the resolver |
+| **Live Rate** (formerly Ask Rate) | Alpha Vantage CURRENCY_EXCHANGE_RATE (field 9, ask price), daily; also the label used for historical mid-market from FX_DAILY per PEAS convention | Forex Rate Log **and** Currency Exchange | Transactions default to this via the resolver |
 | **Spot Rate** | Manual entry only — actual rate agreed with the bank | Forex Rate Log only | Resolver picks this when user wants a negotiated rate; also reused within the day after a Manual override |
 | **Closing** | Month-end close, mid-market. Source: FX_DAILY | Forex Rate Log only | Balance Sheet translation (future integration) |
 | **Monthly Average** | Average of daily closes, mid-market. Source: FX_DAILY | Forex Rate Log only | P&L translation (future integration) |
@@ -46,6 +46,14 @@ rate, NOT the indicative provider rate. The system previously labelled
 Alpha Vantage rates as Spot incorrectly; renamed in April 2026 (code,
 data, UI, reports, dashboards all updated).
 
+**Ask → Live Rate (Sept 2026, UAT items 8/9)**: "Ask Rate" is renamed to
+"Live Rate" as the *stored* value everywhere — Forex Rate Log `rate_type`,
+Forex Sync Log `sync_type` ("Live Rate (Daily)"), FS Rate Demo, report
+Rate Type filter. Patch `rename_ask_rate_to_live_rate` migrates data; the
+old Live↔Ask translation layer in `rates.py` is gone. Pre-rename FRL
+record names still end in `-Ask Rate` (names not renamed; all lookups
+filter on fields).
+
 ---
 ## Known gap - historical ask rates
 
@@ -54,7 +62,7 @@ historically. Going forward, daily ask rates come from
 CURRENCY_EXCHANGE_RATE (field 9). Monthly-average ask rates are
 derivable only from accumulated daily ask records going forward.
 Historical backfill of *true* ask rates is NOT possible — backfilled
-rates are mid-market labelled as Ask Rate by PEAS convention.
+rates are mid-market labelled as Live Rate by PEAS convention.
 
 **OPEN ITEM:** Sibeti to sign off on mid-market rates being acceptable
 for grant reporting. Raised April 2026.
@@ -68,8 +76,8 @@ Alpha Vantage
     FX_DAILY               (monthly) --> close (mid-market)
 
 peasforex/tasks/sync_forex.py
-    sync_daily_spot_rates()          [function name unchanged; now writes Ask Rate]
-        --> Forex Rate Log (Ask Rate, forward + reverse)
+    sync_daily_spot_rates()          [function name unchanged; now writes Live Rate]
+        --> Forex Rate Log (Live Rate, forward + reverse)
         --> Currency Exchange (forward + reverse)
 
     sync_monthly_rates()
@@ -77,7 +85,7 @@ peasforex/tasks/sync_forex.py
         --> Currency Exchange (Closing, forward + reverse)
 
     backfill_historical_rates(months=6)
-        --> Forex Rate Log (Ask Rate — PEAS convention for mid-market, forward + reverse)
+        --> Forex Rate Log (Live Rate — PEAS convention for mid-market, forward + reverse)
 
 Transaction-side resolver
     peasforex/rates.py
@@ -225,7 +233,7 @@ preserve-on-success per `docs/spot_ask_integration_plan.md` W4.
 ## Test suites
 
 ### `test_forex_ui.py` — technical/data integrity smoke
-11 assertions. Kept as a short-running baseline. Covers: Ask Rate count
+11 assertions. Kept as a short-running baseline. Covers: Live Rate count
 for today, GBP→UGX CE=FRL integrity, PI conversion_rate auto-fill.
 
 ### `test_forex_stories.py` — user-story suite (120 assertions, 30 stories)
@@ -239,7 +247,7 @@ for today, GBP→UGX CE=FRL integrity, PI conversion_rate auto-fill.
 | 5 | Sibeti | Closing + Monthly Average in FRL (not CE) | API |
 | 6 | Robert | Central Bank Rate entry for audit | API |
 | 7 | Sarah | Prudency Calculator loads | UI |
-| 8 | Sibeti | FS Rate Demo form loads with Ask Rate option | UI |
+| 8 | Sibeti | FS Rate Demo form loads with Live Rate option | UI |
 | 9 | — | Admin access to finance surfaces | UI |
 | 10 | Karly | Sync log health (no silent errors) | API |
 | 11 | Robert | Payment Entry auto-populates (UI set_value chain) | UI |
@@ -248,7 +256,7 @@ for today, GBP→UGX CE=FRL integrity, PI conversion_rate auto-fill.
 | 14 | Robert | Spot Rate first-use + deduplication + no CE leak | API |
 | 15 | — | Diagnostic: no auto-written Spot from AV | API |
 | 16 | Sibeti | Central Bank Rate does not pollute CE | API |
-| 17 | — | Resolver contract: Auto / Spot / Ask / Manual rules | API |
+| 17 | — | Resolver contract: Auto / Spot / Live Rate / Manual rules | API |
 | 18 | Robert | Employee Advance rate resolves + source stamped on save | UI |
 | 19 | Robert | EC parent-currency hard lock on rows (L1/L2/L3) | UI |
 | 20 | Robert | EC inherits rate from linked Employee Advance | UI |
