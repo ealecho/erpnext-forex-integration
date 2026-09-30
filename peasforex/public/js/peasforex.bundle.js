@@ -120,7 +120,7 @@ window.peasforex = {
         if (!$box.length) {
             $box = $(
                 '<div class="peasforex-applied-rates" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:var(--padding-sm) var(--padding-md);border-bottom:1px solid var(--border-color);"></div>'
-            ).insertAfter($form);
+            ).attr("data-report", report.report_name).insertAfter($form);
         } else if ($box.length > 1) {
             $box.slice(1).remove();
             $box = $box.first();
@@ -192,6 +192,16 @@ window.peasforex = {
             report.refresh();
         }, __("Manual Applied Rates"), __("Apply"));
     }
+
+    // frappe reuses a single query-report page for every report, so the
+    // strip would otherwise linger on whichever report is opened next
+    frappe.router.on("change", () => {
+        const route = frappe.get_route();
+        if (route[0] !== "query-report") return;
+        $(".peasforex-applied-rates")
+            .filter((_, el) => el.dataset.report !== route[1])
+            .remove();
+    });
 
     REPORTS.forEach(function(name) {
         let config;
