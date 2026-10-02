@@ -442,7 +442,7 @@ class AlphaVantageClient:
                         today: {"open": rate, "high": rate, "low": rate, "close": rate}
                     },
                     "meta_data": {
-                        "note": "Ask Rate fallback - only today's rate available",
+                        "note": "Live Rate fallback - only today's rate available",
                         "fallback": True,
                     },
                     "raw": spot_result.get("raw", {}),

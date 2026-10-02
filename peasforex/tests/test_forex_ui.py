@@ -1,5 +1,5 @@
 """
-Forex Ask Rate - Playwright UI Tests
+Forex Live Rate - Playwright UI Tests
 Run locally against peas-dev.localhost:8020
 
 Usage:
@@ -60,14 +60,14 @@ def login(page):
 
 
 def test_forex_rate_log(page):
-    print(f"\n[1] Forex Rate Log -- Ask Rate records for {TODAY}")
+    print(f"\n[1] Forex Rate Log -- Live Rate records for {TODAY}")
 
     data = api_get(page, "Forex Rate Log",
-        [["rate_date", "=", TODAY], ["rate_type", "=", "Ask Rate"]],
+        [["rate_date", "=", TODAY], ["rate_type", "=", "Live Rate"]],
         ["name", "from_currency", "to_currency", "exchange_rate"])
     records = data.get("data", [])
 
-    log("Ask Rate records exist for today", len(records) > 0, f"{len(records)} records")
+    log("Live Rate records exist for today", len(records) > 0, f"{len(records)} records")
     log("Count = 18 (9 pairs x 2 directions)", len(records) == 18, f"got {len(records)}")
 
     spot = api_get(page, "Forex Rate Log",
@@ -90,7 +90,7 @@ def test_forex_rate_log(page):
 
 
 def test_currency_exchange(page):
-    print("\n[2] Currency Exchange -- bidirectional Ask Rate records")
+    print("\n[2] Currency Exchange -- bidirectional Live Rate records")
 
     fwd = api_get(page, "Currency Exchange",
         [["date", "=", TODAY], ["from_currency", "=", "GBP"], ["to_currency", "=", "UGX"]],
@@ -106,12 +106,12 @@ def test_currency_exchange(page):
 
     frl = api_get(page, "Forex Rate Log",
         [["rate_date", "=", TODAY], ["from_currency", "=", "GBP"],
-         ["to_currency", "=", "UGX"], ["rate_type", "=", "Ask Rate"]],
+         ["to_currency", "=", "UGX"], ["rate_type", "=", "Live Rate"]],
         ["exchange_rate"]).get("data", [])
 
     if fwd and frl:
         match = abs(fwd[0]["exchange_rate"] - frl[0]["exchange_rate"]) < 0.001
-        log("CE rate = FRL Ask Rate exactly", match,
+        log("CE rate = FRL Live Rate exactly", match,
             f"CE={fwd[0]['exchange_rate']:.4f}  FRL={frl[0]['exchange_rate']:.4f}")
 
 
@@ -148,7 +148,7 @@ def test_purchase_invoice_rate(page):
         form_rate = float(rate_val)
         ce_rate = ce[0]["exchange_rate"]
         match = abs(form_rate - ce_rate) / ce_rate < 0.05
-        log("Form rate matches CE Ask Rate (within 5%)", match,
+        log("Form rate matches CE Live Rate (within 5%)", match,
             f"form={form_rate:.4f}  CE={ce_rate:.4f}")
 
 

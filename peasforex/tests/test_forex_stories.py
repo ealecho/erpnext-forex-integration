@@ -309,7 +309,7 @@ def form_set_and_poll(page: Page, setters: list[tuple[str, str]], watch_field: s
 # ---------------------------------------------------------------------------
 
 def preflight_sync_today(page: Page) -> dict:
-    """Returns configured-pair summary + today's Ask Rate status.
+    """Returns configured-pair summary + today's Live Rate status.
     Currency Pair is a child table under Forex Settings - read the parent."""
     settings = page.evaluate("""
         async () => {
@@ -323,7 +323,7 @@ def preflight_sync_today(page: Page) -> dict:
     daily_pairs = [c for c in children
                    if c.get("enabled") and c.get("sync_spot_daily")]
     ask = api_get(page, "Forex Rate Log",
-                  [["rate_date", "=", TODAY], ["rate_type", "=", "Ask Rate"]],
+                  [["rate_date", "=", TODAY], ["rate_type", "=", "Live Rate"]],
                   ["name"], limit=200)
     return {
         "pairs": len(daily_pairs),
@@ -373,18 +373,18 @@ def story_2_sync_and_rate_log(page: Page, ctx: dict):
     print("\n[Story 2]  Robert - Daily sync + Forex Rate Log")
 
     if not ctx["sync_ran"]:
-        skip("Today's Ask Rates synced",
-             f"no Ask Rate rows for {TODAY} - daily sync has not run yet today")
+        skip("Today's Live Rates synced",
+             f"no Live Rate rows for {TODAY} - daily sync has not run yet today")
         skip("Bidirectional inverse integrity", "depends on today's sync")
         skip("GBP->UGX rate realistic", "depends on today's sync")
     else:
         expected = ctx["pairs"] * 2   # forward + reverse per enabled daily pair
-        log("Today's Ask Rate count = 2 x enabled daily pairs",
+        log("Today's Live Rate count = 2 x enabled daily pairs",
             ctx["ask_rates_today"] == expected,
             f"got {ctx['ask_rates_today']}, expected {expected}")
 
         rates = api_get(page, "Forex Rate Log",
-                        [["rate_date", "=", TODAY], ["rate_type", "=", "Ask Rate"]],
+                        [["rate_date", "=", TODAY], ["rate_type", "=", "Live Rate"]],
                         ["from_currency", "to_currency", "exchange_rate"], limit=200)
 
         # Bidirectional inverse integrity across all pairs (not just GBP-UGX)
@@ -417,11 +417,11 @@ def story_2_sync_and_rate_log(page: Page, ctx: dict):
     log("Sync Log has entries for today",
         len(recent) > 0, f"{len(recent)} entries")
     if recent:
-        # Acceptable sync_types today: Ask Rate (Daily), Spot (Daily) [legacy], Backfill
+        # Acceptable sync_types today: Live Rate (Daily), Spot (Daily) [legacy], Backfill
         types_seen = sorted({e["sync_type"] for e in recent})
         log("Today's sync types look sane",
             any(t in types_seen for t in
-                ("Ask Rate (Daily)", "Spot (Daily)", "Backfill", "Manual")),
+                ("Live Rate (Daily)", "Spot (Daily)", "Backfill", "Manual")),
             ", ".join(types_seen))
         errors_without_msg = [e for e in recent
                               if e["status"] == "Error" and not e.get("error_message")]
@@ -431,7 +431,7 @@ def story_2_sync_and_rate_log(page: Page, ctx: dict):
 
 
 # ---------------------------------------------------------------------------
-# STORY 3 - Robert: Transaction auto-populates Ask Rate
+# STORY 3 - Robert: Transaction auto-populates Live Rate
 # Using Purchase Invoice - our proven pattern. Payment Entry has a deeper
 # setup requirement (Mode of Payment + accounts) that the plan underestimated.
 # ---------------------------------------------------------------------------
@@ -480,7 +480,7 @@ def story_3_transaction_rate(page: Page, ctx: dict):
     if populated:
         form_rate = float(rate_val)
         match = abs(form_rate - expected) / expected < 0.05
-        log("PI rate matches CE Ask Rate (within 5%)",
+        log("PI rate matches CE Live Rate (within 5%)",
             match, f"form={form_rate:.4f}  CE={expected:.4f}")
 
 
@@ -576,22 +576,22 @@ def story_5_monthly_rates(page: Page, ctx: dict):
         log("Closing and Monthly Average are distinct values",
             distinct, f"{len(common)} shared months, any_distinct={distinct}")
 
-    # CE contract - Ask Rate goes to CE, Closing/Average do NOT.
-    # Verify by: today's CE rate matches today's FRL Ask Rate (not any Closing).
+    # CE contract - Live Rate goes to CE, Closing/Average do NOT.
+    # Verify by: today's CE rate matches today's FRL Live Rate (not any Closing).
     ce = api_get(page, "Currency Exchange",
                  [["date", "=", TODAY], ["from_currency", "=", "GBP"],
                   ["to_currency", "=", "UGX"]], ["exchange_rate"])
     ask = api_get(page, "Forex Rate Log",
-                  [["rate_date", "=", TODAY], ["rate_type", "=", "Ask Rate"],
+                  [["rate_date", "=", TODAY], ["rate_type", "=", "Live Rate"],
                    ["from_currency", "=", "GBP"], ["to_currency", "=", "UGX"]],
                   ["exchange_rate"])
     if ce and ask:
         ce_rate, ask_rate = float(ce[0]["exchange_rate"]), float(ask[0]["exchange_rate"])
-        log("CE rate equals FRL Ask Rate (Closing not pushed to CE)",
+        log("CE rate equals FRL Live Rate (Closing not pushed to CE)",
             abs(ce_rate - ask_rate) < 0.01,
             f"CE={ce_rate:.4f}  Ask={ask_rate:.4f}")
     else:
-        skip("CE rate equals FRL Ask Rate", "today's rates unavailable")
+        skip("CE rate equals FRL Live Rate", "today's rates unavailable")
 
 
 # ---------------------------------------------------------------------------
@@ -687,15 +687,16 @@ def story_8_fs_rate_demo(page: Page, ctx: dict):
               "bs_rate_type", "pl_rate_type", "rates_html"):
         log(f"FS Rate Demo field '{f}' present", f in schema_fields)
 
-    # Post-April-2026 rename: bs_rate_type must offer Ask Rate (not Spot)
+    # Spot→Ask (Apr 2026) then Ask→Live (Sep 2026): bs_rate_type must offer
+    # Live Rate, not Spot
     opts = page.evaluate("""
         () => {
             const f = cur_frm.fields_dict['bs_rate_type'];
             return f ? (f.df.options || '').split('\\n') : [];
         }
     """)
-    log("bs_rate_type offers 'Ask Rate' (post Spot→Ask rename)",
-        "Ask Rate" in opts and "Spot" not in opts,
+    log("bs_rate_type offers 'Live Rate' (not Spot)",
+        "Live Rate" in opts and "Spot" not in opts,
         ", ".join(o for o in opts if o))
 
 
@@ -827,7 +828,7 @@ def story_11_payment_entry(page: Page, ctx: dict):
     if populated:
         form_rate = float(rate_val)
         match = abs(form_rate - expected) / expected < 0.05
-        log("PE rate matches CE Ask Rate (within 5%)",
+        log("PE rate matches CE Live Rate (within 5%)",
             match, f"form={form_rate:.4f}  CE={expected:.4f}")
 
 
@@ -913,7 +914,7 @@ def story_12_journal_entry(page: Page, ctx: dict):
     if populated:
         form_rate = float(rate_val)
         match = abs(form_rate - expected) / expected < 0.05
-        log("JE row rate matches CE Ask Rate (within 5%)",
+        log("JE row rate matches CE Live Rate (within 5%)",
             match, f"form={form_rate:.4f}  CE={expected:.4f}")
 
 
@@ -982,7 +983,7 @@ def story_13_date_sensitivity(page: Page, ctx: dict):
 def story_14_spot_first_and_subsequent(page: Page, ctx: dict):
     print("\n[Story 14] Robert - Spot Rate first-use + subsequent-use upsert")
 
-    # Use a unique pair that won't collide with today's Ask Rate data
+    # Use a unique pair that won't collide with today's Live Rate data
     # (we don't want to corrupt GBP->UGX).
     test_from, test_to = "CHF", "UGX"
     first_rate, second_rate = 4200.11, 4250.22
@@ -1042,7 +1043,7 @@ def story_14_spot_first_and_subsequent(page: Page, ctx: dict):
 # ---------------------------------------------------------------------------
 
 def story_15_spot_audit(page: Page, ctx: dict):
-    print("\n[Story 15] Diagnostic - Spot vs Ask Rate terminology audit")
+    print("\n[Story 15] Diagnostic - Spot vs Live Rate terminology audit")
 
     # Regression guard: no Spot row should be sourced from Alpha Vantage.
     # Per CLAUDE.md, Spot = manually-entered negotiated bank rate. Any
@@ -1055,12 +1056,12 @@ def story_15_spot_audit(page: Page, ctx: dict):
         f"{len(auto_spots)} auto-generated Spot rows - a sync path is mis-labelling (check sync_forex.py)"
         if auto_spots else "clean")
 
-    # Count Ask Rate records by date.
+    # Count Live Rate records by date.
     ask_days = api_get(page, "Forex Rate Log",
-                       [["rate_type", "=", "Ask Rate"]],
+                       [["rate_type", "=", "Live Rate"]],
                        ["rate_date"], limit=500)
     distinct_ask_dates = len({r["rate_date"] for r in ask_days})
-    log("Ask Rate pipeline is live (at least 1 day of Ask Rate records)",
+    log("Live Rate pipeline is live (at least 1 day of Live Rate records)",
         distinct_ask_dates >= 1, f"{distinct_ask_dates} distinct dates")
 
 
@@ -1138,16 +1139,15 @@ def story_17_resolver_contract(page: Page, ctx: dict):
     r = call(FROM, FROM, TODAY, "Auto")
     log("Same currency returns rate 1.0", r.get("rate") == 1.0, str(r)[:80])
 
-    # Auto with no Spot today -> falls back to Ask Rate ("Live Rate" at
-    # the API boundary since 77e89af)
+    # Auto with no Spot today -> falls back to Live Rate
     r = call(FROM, TO, TODAY, "Auto")
-    log("Auto falls back Spot→Ask when no Spot for date",
+    log("Auto falls back Spot→Live when no Spot for date",
         r.get("source") == "Live Rate" and r.get("rate", 0) > 100,
         f"source={r.get('source')} rate={r.get('rate')}")
 
-    # Explicit Ask Rate resolves (echoed back as the display alias)
-    r = call(FROM, TO, TODAY, "Ask Rate")
-    log("Explicit Ask Rate resolves",
+    # Explicit Live Rate resolves
+    r = call(FROM, TO, TODAY, "Live Rate")
+    log("Explicit Live Rate resolves",
         r.get("source") == "Live Rate" and r.get("rate", 0) > 100,
         f"source={r.get('source')} rate={r.get('rate')}")
 
@@ -1167,7 +1167,7 @@ def story_17_resolver_contract(page: Page, ctx: dict):
 # STORY 18 - EA resolver stamps actual source + custom_advance_exchange_rate
 # Proves the before_validate hook fires on save: user picks Auto, resolver
 # populates the advance rate AND rewrites the source field to the actually
-# used rate type ("Ask Rate" / "Spot") rather than the literal "Auto".
+# used rate type ("Live Rate" / "Spot") rather than the literal "Auto".
 # ---------------------------------------------------------------------------
 
 def story_18_ea_resolver(page: Page, ctx: dict):
@@ -1175,7 +1175,7 @@ def story_18_ea_resolver(page: Page, ctx: dict):
     print("\n[Story 18] Robert creates a USD field advance - rate auto-fills")
 
     if not ctx["sync_ran"]:
-        skip("EA auto-rate on Draft save", "no Ask Rates today")
+        skip("EA auto-rate on Draft save", "no Live Rates today")
         return
 
     employees = api_get(page, "Employee",
@@ -1358,7 +1358,7 @@ def story_20_ec_advance_inheritance(page: Page, ctx: dict):
     print("\n[Story 20] EC inherits rate from linked Employee Advance")
 
     if not ctx["sync_ran"]:
-        skip("EC advance inheritance", "no Ask Rates today")
+        skip("EC advance inheritance", "no Live Rates today")
         return
 
     employees = api_get(page, "Employee",
@@ -1369,7 +1369,7 @@ def story_20_ec_advance_inheritance(page: Page, ctx: dict):
         return
     emp = employees[0]["name"]
 
-    # Build a test EA. peas_hr enforces source=Ask Rate on EA, so let the
+    # Build a test EA. peas_hr enforces source=Live Rate on EA, so let the
     # resolver fill the rate; we read it back and use it as the expected
     # inherited value on the EC. This is purer than the old "distinctive
     # 400" approach: it tests inheritance against the actual stamped rate.
@@ -1402,7 +1402,7 @@ def story_20_ec_advance_inheritance(page: Page, ctx: dict):
             "custom_amount_in_base_currency": round(100 * seed_rate, 2),
             "budget_code": "PEAS-ICT-01",
         }],
-        # No custom_forex_rate_source — peas_hr forces it to Ask Rate.
+        # No custom_forex_rate_source — peas_hr forces it to Live Rate.
     })
     if not ea_res.get("ok"):
         log("EA setup for inheritance test", False,
@@ -1504,7 +1504,7 @@ def story_20_ec_advance_inheritance(page: Page, ctx: dict):
 # STORY 21 - Payment Entry resolver stamps source (saved state)
 # API-saves a minimal Internal Transfer PE (GBP->UGX) with source=Auto.
 # Proves the before_validate hook fires on save: rate populated AND source
-# rewritten to the actually-used type ("Ask Rate" today, no Spot).
+# rewritten to the actually-used type ("Live Rate" today, no Spot).
 # ---------------------------------------------------------------------------
 
 def story_21_pe_resolver(page: Page, ctx: dict):
@@ -1512,7 +1512,7 @@ def story_21_pe_resolver(page: Page, ctx: dict):
     print("\n[Story 21] Robert books a GBP->UGX internal transfer - rate auto-fills")
 
     if not ctx["sync_ran"]:
-        skip("PE UI auto-rate on Draft save", "no Ask Rates today")
+        skip("PE UI auto-rate on Draft save", "no Live Rates today")
         return
 
     nav(page, "payment-entry/new-payment-entry-1")
@@ -1591,7 +1591,7 @@ def story_22_je_resolver(page: Page, ctx: dict):
     print("\n[Story 22] Sibeti books a multi-currency JE - per-row rate + balance")
 
     if not ctx["sync_ran"]:
-        skip("JE UI auto-rate on Draft save", "no Ask Rates today")
+        skip("JE UI auto-rate on Draft save", "no Live Rates today")
         return
 
     # Preview which rate the resolver will use for GBP->UGX today, so we
@@ -1731,7 +1731,7 @@ def story_23_si_resolver(page: Page, ctx: dict):
     print("\n[Story 23] Grants team issues a foreign-currency Sales Invoice")
 
     if not ctx["sync_ran"]:
-        skip("SI conversion_rate auto-populates on GBP", "no Ask Rates today")
+        skip("SI conversion_rate auto-populates on GBP", "no Live Rates today")
         return
 
     ce = api_get(page, "Currency Exchange",
@@ -1775,7 +1775,7 @@ def story_24_submit_lifecycle(page: Page, ctx: dict):
     print("\n[Story 24] Sibeti submits a multi-currency JE - rate reaches GL Entry")
 
     if not ctx["sync_ran"]:
-        skip("JE submit writes stamped rate to GL", "no Ask Rates today")
+        skip("JE submit writes stamped rate to GL", "no Live Rates today")
         return
 
     preview = page.evaluate(f"""
@@ -1906,7 +1906,7 @@ def story_25_ec_credit_card(page: Page, ctx: dict):
     print("\n[Story 25] Robert expenses a USD charge on the company credit card")
 
     if not ctx["sync_ran"]:
-        skip("EC Credit Card line rate auto-resolves", "no Ask Rates today")
+        skip("EC Credit Card line rate auto-resolves", "no Live Rates today")
         return
 
     employees = api_get(page, "Employee",
@@ -2047,12 +2047,12 @@ def _bench_sql(sql: str) -> str:
 
 def story_26_ug_ea_gbp_multiline(page: Page, ctx: dict):
     """A Uganda programme officer files a GBP field advance with 3 breakdown
-    lines. Resolver should force Ask Rate + today, stamp rate and source,
+    lines. Resolver should force Live Rate + today, stamp rate and source,
     and the breakdown UGX totals should reconcile to the GBP amount × rate."""
     print("\n[Story 26] UG officer files a GBP advance with 3 breakdown lines")
 
     if not ctx["sync_ran"]:
-        skip("UG EA GBP multi-line resolver stamp", "no Ask Rates today")
+        skip("UG EA GBP multi-line resolver stamp", "no Live Rates today")
         return
 
     ce = api_get(page, "Currency Exchange",
@@ -2112,7 +2112,7 @@ def story_26_ug_ea_gbp_multiline(page: Page, ctx: dict):
         "custom_funds_required_by_date": funds_by,
         "custom_expense_approver": "linemanager1.ict.ug@peas.test",
         "custom_expenses": custom_expenses,
-        # No source set - resolver's EA branch forces it to Ask Rate.
+        # No source set - resolver's EA branch forces it to Live Rate.
     })
     if not ea_res.get("ok"):
         log("UG officer's GBP EA inserts", False,
@@ -2135,7 +2135,7 @@ def story_26_ug_ea_gbp_multiline(page: Page, ctx: dict):
     got_rate = float(ea.get("custom_advance_exchange_rate") or 0)
     source = ea.get("custom_forex_rate_source")
     applied = ea.get("custom_forex_rate_applied_date")
-    log("Resolver stamped today's GBP->UGX Ask Rate",
+    log("Resolver stamped today's GBP->UGX Live Rate",
         got_rate > 100 and abs(got_rate - expected_rate) / expected_rate < 0.01,
         f"got {got_rate:.4f} expected {expected_rate:.4f}")
     log("EA policy forces source to 'Live Rate' (Spot/Manual disallowed)",
@@ -2202,7 +2202,7 @@ def story_26_ug_ea_gbp_multiline(page: Page, ctx: dict):
 def story_27_ug_pe_for_ea(page: Page, ctx: dict):
     """Finance Officer UG books the payment for the Uganda GBP advance:
     GBP bank out -> UGX employee-advance account. Both source and target
-    rates should resolve; source rewritten from Auto to Ask Rate."""
+    rates should resolve; source rewritten from Auto to Live Rate."""
     print("\n[Story 27] Finance Officer UG books the PE for the GBP advance")
 
     if not ctx.get("ug_ea"):
@@ -2259,7 +2259,7 @@ def story_27_ug_pe_for_ea(page: Page, ctx: dict):
         f"source_rate={src:.4f} expected~{expected_rate:.4f}")
     log("PE target_exchange_rate = 1 (UGX base = base)",
         abs(tgt - 1.0) < 0.001, f"target_rate={tgt}")
-    # Source is whichever the resolver picked today: Ask Rate by default,
+    # Source is whichever the resolver picked today: Live Rate by default,
     # Spot if an earlier story (e.g. Story 14) negotiated one for today.
     log("PE forex rate source stamped from Auto -> actual source",
         source_stamp in ("Live Rate", "Spot"), f"source={source_stamp}")
@@ -2399,7 +2399,7 @@ def story_29_ea_breakdown_rate_stamp(page: Page, ctx: dict):
     print("\n[Story 29] Draft multicurrency EA - breakdown rows inherit parent rate")
 
     if not ctx["sync_ran"]:
-        skip("EA breakdown rows stamped with parent rate", "no Ask Rates today")
+        skip("EA breakdown rows stamped with parent rate", "no Live Rates today")
         return
 
     nav(page, "employee-advance/new-employee-advance-1")
@@ -2687,7 +2687,7 @@ def run():
         # Preflight - informs which stories can run meaningfully.
         ctx = preflight_sync_today(page)
         print(f"\n[Preflight]  enabled daily pairs: {ctx['pairs']}  |  "
-              f"today's Ask Rate rows: {ctx['ask_rates_today']}  |  "
+              f"today's Live Rate rows: {ctx['ask_rates_today']}  |  "
               f"sync_ran: {ctx['sync_ran']}")
 
         stories = [
